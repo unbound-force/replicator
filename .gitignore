@@ -1,0 +1,26 @@
+# Build output
+bin/
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+*.test
+coverage.out
+
+# Database (local dev)
+*.db
+*.db-shm
+*.db-wal
+
+# Environment
+.env
+.env.*
