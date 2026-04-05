@@ -1,0 +1,14 @@
+{
+  "hivemind_store": {
+    "request": {"name": "hivemind_store", "arguments": {"information": "test learning", "tags": "test"}},
+    "typescript_response": {"content": [{"type": "text", "text": "{\"error\":\"dewey unavailable\",\"code\":\"DEWEY_UNAVAILABLE\",\"message\":\"Dewey semantic search is not available. Memory operations require a running Dewey instance.\"}"}]}
+  },
+  "hivemind_find": {
+    "request": {"name": "hivemind_find", "arguments": {"query": "test"}},
+    "typescript_response": {"content": [{"type": "text", "text": "{\"error\":\"dewey unavailable\",\"code\":\"DEWEY_UNAVAILABLE\",\"message\":\"Dewey semantic search is not available. Memory operations require a running Dewey instance.\"}"}]}
+  },
+  "hivemind_get": {
+    "request": {"name": "hivemind_get", "arguments": {"id": "test-id"}},
+    "typescript_response": {"content": [{"type": "text", "text": "{\"deprecated\":true,\"tool\":\"hivemind_get\",\"message\":\"hivemind_get is deprecated. Use dewey_get_page instead.\",\"replacement\":\"dewey_get_page\"}"}]}
+  }
+}

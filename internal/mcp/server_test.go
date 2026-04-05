@@ -21,7 +21,7 @@ func testServer(t *testing.T) (*Server, *db.Store) {
 
 	reg := registry.New()
 	hive.Register(reg, store)
-	return NewServer(reg), store
+	return NewServer(reg, "test"), store
 }
 
 func call(t *testing.T, s *Server, method string, params any) json.RawMessage {
@@ -56,15 +56,19 @@ func TestToolsList(t *testing.T) {
 		t.Fatalf("unmarshal: %v", err)
 	}
 
-	if len(list.Tools) != 4 {
-		t.Errorf("expected 4 tools, got %d", len(list.Tools))
+	if len(list.Tools) != 11 {
+		t.Errorf("expected 11 tools, got %d", len(list.Tools))
 	}
 
 	names := make(map[string]bool)
 	for _, tool := range list.Tools {
 		names[tool.Name] = true
 	}
-	for _, expected := range []string{"hive_cells", "hive_create", "hive_close", "hive_update"} {
+	for _, expected := range []string{
+		"hive_cells", "hive_create", "hive_close", "hive_update",
+		"hive_create_epic", "hive_query", "hive_start", "hive_ready",
+		"hive_sync", "hive_session_start", "hive_session_end",
+	} {
 		if !names[expected] {
 			t.Errorf("missing tool: %s", expected)
 		}

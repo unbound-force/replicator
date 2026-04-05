@@ -8,8 +8,10 @@ package hive
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,14 +19,18 @@ import (
 )
 
 // Cell represents a single work item in the hive.
+//
+// Fields like Description and ParentID are always serialized (no omitempty)
+// to maintain shape parity with the TypeScript cyborg-swarm responses.
+// Optional fields that are truly absent use pointer types with explicit null.
 type Cell struct {
 	ID          string   `json:"id"`
 	Title       string   `json:"title"`
-	Description string   `json:"description,omitempty"`
+	Description string   `json:"description"`
 	Type        string   `json:"type"`
 	Status      string   `json:"status"`
 	Priority    int      `json:"priority"`
-	ParentID    *string  `json:"parent_id,omitempty"`
+	ParentID    *string  `json:"parent_id"`
 	ProjectKey  string   `json:"project_key,omitempty"`
 	AssignedTo  *string  `json:"assigned_to,omitempty"`
 	Labels      []string `json:"labels,omitempty"`
@@ -109,6 +115,20 @@ func QueryCells(store *db.Store, q CellQuery) ([]Cell, error) {
 	if q.Type != "" {
 		query += " AND type = ?"
 		args = append(args, q.Type)
+	}
+
+	// When Ready is true, filter to cells that are open, not epics, and whose
+	// parent (if any) is not in an unfinished state. This mirrors ReadyCell
+	// logic but returns multiple results.
+	if q.Ready {
+		query += ` AND status = 'open'
+		  AND type != 'epic'
+		  AND (parent_id IS NULL
+		       OR NOT EXISTS (
+		           SELECT 1 FROM beads p
+		           WHERE p.id = beads.parent_id
+		             AND p.status IN ('open', 'in_progress', 'blocked')
+		       ))`
 	}
 
 	query += " ORDER BY priority DESC, created_at DESC"
@@ -198,6 +218,61 @@ func UpdateCell(store *db.Store, id string, status *string, description *string,
 		return fmt.Errorf("cell %q not found", id)
 	}
 	return nil
+}
+
+// StartCell sets a cell's status to in_progress.
+func StartCell(store *db.Store, id string) error {
+	now := time.Now().UTC().Format(time.RFC3339)
+	result, err := store.DB.Exec(
+		"UPDATE beads SET status = 'in_progress', updated_at = ? WHERE id = ?",
+		now, id,
+	)
+	if err != nil {
+		return fmt.Errorf("start cell: %w", err)
+	}
+	n, _ := result.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("cell %q not found", id)
+	}
+	return nil
+}
+
+// ReadyCell finds the first unblocked open cell -- one whose parent (if any)
+// is not in an open, in_progress, or blocked state. Results are ordered by
+// priority DESC so the highest-priority ready cell is returned.
+func ReadyCell(store *db.Store) (*Cell, error) {
+	// Exclude epics from ready results -- they are containers, not actionable work.
+	row := store.DB.QueryRow(`
+		SELECT b.id, b.title, b.description, b.type, b.status, b.priority,
+		       b.parent_id, b.created_at, b.updated_at
+		FROM beads b
+		WHERE b.status = 'open'
+		  AND b.type != 'epic'
+		  AND (b.parent_id IS NULL
+		       OR NOT EXISTS (
+		           SELECT 1 FROM beads p
+		           WHERE p.id = b.parent_id
+		             AND p.status IN ('open', 'in_progress', 'blocked')
+		       ))
+		ORDER BY b.priority DESC, b.created_at ASC
+		LIMIT 1
+	`)
+
+	var c Cell
+	var desc, parentID *string
+	err := row.Scan(&c.ID, &c.Title, &desc, &c.Type, &c.Status, &c.Priority,
+		&parentID, &c.CreatedAt, &c.UpdatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("ready cell: %w", err)
+	}
+	if desc != nil {
+		c.Description = *desc
+	}
+	c.ParentID = parentID
+	return &c, nil
 }
 
 func generateID() (string, error) {

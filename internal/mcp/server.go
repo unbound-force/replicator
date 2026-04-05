@@ -20,12 +20,14 @@ import (
 // Server is an MCP JSON-RPC server.
 type Server struct {
 	registry *registry.Registry
+	version  string
 	nextID   atomic.Int64
 }
 
 // NewServer creates an MCP server backed by the given tool registry.
-func NewServer(reg *registry.Registry) *Server {
-	return &Server{registry: reg}
+// The version string is reported in the initialize handshake.
+func NewServer(reg *registry.Registry, version string) *Server {
+	return &Server{registry: reg, version: version}
 }
 
 // jsonrpcRequest is a JSON-RPC 2.0 request.
@@ -134,7 +136,7 @@ func (s *Server) handleInitialize(req *jsonrpcRequest) *jsonrpcResponse {
 			},
 			"serverInfo": map[string]any{
 				"name":    "replicator",
-				"version": "0.1.0",
+				"version": s.version,
 			},
 		},
 	}

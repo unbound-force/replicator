@@ -76,3 +76,10 @@ internal/
 
 Go rewrite of [cyborg-swarm](https://github.com/unbound-force/cyborg-swarm),
 originally by [Joel Hooks](https://github.com/joelhooks).
+
+## Active Technologies
+- Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations) (001-go-rewrite-phases)
+- SQLite at `~/.config/swarm-tools/swarm.db` (WAL mode, compatible with cyborg-swarm) (001-go-rewrite-phases)
+
+## Recent Changes
+- 001-go-rewrite-phases: Added Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations)
