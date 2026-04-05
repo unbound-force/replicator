@@ -132,8 +132,8 @@ func TestHealth_Failure(t *testing.T) {
 
 func TestStore_Success(t *testing.T) {
 	srv := newTestServer(t, func(method string, params json.RawMessage) (any, *jsonRPCError) {
-		if method != "dewey_dewey_store_learning" {
-			t.Errorf("method = %q, want %q", method, "dewey_dewey_store_learning")
+		if method != "store_learning" {
+			t.Errorf("method = %q, want %q", method, "store_learning")
 		}
 
 		var p map[string]string
@@ -199,8 +199,8 @@ func TestStore_DeweyUnavailable(t *testing.T) {
 
 func TestFind_Success(t *testing.T) {
 	srv := newTestServer(t, func(method string, params json.RawMessage) (any, *jsonRPCError) {
-		if method != "dewey_dewey_semantic_search" {
-			t.Errorf("method = %q, want %q", method, "dewey_dewey_semantic_search")
+		if method != "semantic_search" {
+			t.Errorf("method = %q, want %q", method, "semantic_search")
 		}
 
 		var p map[string]any
