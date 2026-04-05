@@ -10,7 +10,7 @@ func TestOpenMemory(t *testing.T) {
 	defer store.Close()
 
 	// Verify tables exist.
-	tables := []string{"events", "agents", "beads", "cell_events"}
+	tables := []string{"events", "agents", "beads", "cell_events", "sessions", "messages", "reservations"}
 	for _, table := range tables {
 		var name string
 		err := store.DB.QueryRow(

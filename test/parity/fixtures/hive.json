@@ -1,0 +1,38 @@
+{
+  "hive_cells": {
+    "request": {"name": "hive_cells", "arguments": {}},
+    "typescript_response": {"content": [{"type": "text", "text": "[]"}]}
+  },
+  "hive_cells_with_data": {
+    "request": {"name": "hive_cells", "arguments": {"status": "open"}},
+    "typescript_response": {"content": [{"type": "text", "text": "[{\"id\":\"cell-abc123\",\"title\":\"Test task\",\"description\":\"\",\"type\":\"task\",\"status\":\"open\",\"priority\":1,\"parent_id\":null,\"created_at\":\"2025-01-01T00:00:00Z\",\"updated_at\":\"2025-01-01T00:00:00Z\"}]"}]}
+  },
+  "hive_create": {
+    "request": {"name": "hive_create", "arguments": {"title": "New task", "type": "task", "priority": 1}},
+    "typescript_response": {"content": [{"type": "text", "text": "{\"id\":\"cell-abc123\",\"title\":\"New task\",\"description\":\"\",\"type\":\"task\",\"status\":\"open\",\"priority\":1,\"parent_id\":null,\"created_at\":\"2025-01-01T00:00:00Z\",\"updated_at\":\"2025-01-01T00:00:00Z\"}"}]}
+  },
+  "hive_close": {
+    "request": {"name": "hive_close", "arguments": {"id": "cell-abc123", "reason": "done"}},
+    "typescript_response": {"content": [{"type": "text", "text": "{\"status\":\"closed\"}"}]}
+  },
+  "hive_update": {
+    "request": {"name": "hive_update", "arguments": {"id": "cell-abc123", "status": "in_progress"}},
+    "typescript_response": {"content": [{"type": "text", "text": "{\"status\":\"updated\"}"}]}
+  },
+  "hive_create_epic": {
+    "request": {"name": "hive_create_epic", "arguments": {"epic_title": "Test Epic", "subtasks": [{"title": "Sub 1"}, {"title": "Sub 2"}]}},
+    "typescript_response": {"content": [{"type": "text", "text": "{\"epic\":{\"id\":\"cell-epic123\",\"title\":\"Test Epic\",\"description\":\"\",\"type\":\"epic\",\"status\":\"open\",\"priority\":1,\"parent_id\":null,\"created_at\":\"2025-01-01T00:00:00Z\",\"updated_at\":\"2025-01-01T00:00:00Z\"},\"subtasks\":[{\"id\":\"cell-sub1\",\"title\":\"Sub 1\",\"type\":\"task\",\"status\":\"open\",\"priority\":1,\"parent_id\":\"cell-epic123\",\"created_at\":\"2025-01-01T00:00:00Z\",\"updated_at\":\"2025-01-01T00:00:00Z\"}]}"}]}
+  },
+  "hive_query": {
+    "request": {"name": "hive_query", "arguments": {}},
+    "typescript_response": {"content": [{"type": "text", "text": "[]"}]}
+  },
+  "hive_start": {
+    "request": {"name": "hive_start", "arguments": {"id": "cell-abc123"}},
+    "typescript_response": {"content": [{"type": "text", "text": "{\"status\":\"in_progress\"}"}]}
+  },
+  "hive_ready": {
+    "request": {"name": "hive_ready", "arguments": {}},
+    "typescript_response": {"content": [{"type": "text", "text": "{\"message\":\"no ready cells\"}"}]}
+  }
+}

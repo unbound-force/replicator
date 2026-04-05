@@ -78,4 +78,7 @@ var migrations = []string{
 	migrationAgents,
 	migrationCells,
 	migrationCellEvents,
+	migrationSessions,
+	migrationMessages,
+	migrationReservations,
 }

@@ -34,6 +34,10 @@ via Dewey).`,
 	root.AddCommand(serveCmd())
 	root.AddCommand(cellsCmd())
 	root.AddCommand(versionCmd())
+	root.AddCommand(doctorCmd())
+	root.AddCommand(statsCmd())
+	root.AddCommand(queryCmd())
+	root.AddCommand(setupCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -70,6 +74,62 @@ func versionCmd() *cobra.Command {
 		Short: "Print version information",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("replicator %s\n", Version)
+		},
+	}
+}
+
+func doctorCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "doctor",
+		Short: "Run health checks on the replicator environment",
+		Long:  "Checks git, database, Dewey connectivity, and config directory.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := config.Load()
+			return runDoctor(cfg)
+		},
+	}
+}
+
+func statsCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "stats",
+		Short: "Show database statistics",
+		Long:  "Displays event counts, recent activity, and cell status summary.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := config.Load()
+			return runStats(cfg)
+		},
+	}
+}
+
+func queryCmd() *cobra.Command {
+	var listFlag bool
+
+	cmd := &cobra.Command{
+		Use:   "query [preset]",
+		Short: "Run a preset database query",
+		Long:  "Executes a named preset query against the database. Use --list to see available presets.",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if listFlag || len(args) == 0 {
+				listQueryPresets()
+				return nil
+			}
+			cfg := config.Load()
+			return runQuery(cfg, args[0])
+		},
+	}
+	cmd.Flags().BoolVar(&listFlag, "list", false, "List available query presets")
+	return cmd
+}
+
+func setupCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "setup",
+		Short: "Initialize replicator environment",
+		Long:  "Creates config directory, initializes database, and verifies git.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runSetup()
 		},
 	}
 }

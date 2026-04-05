@@ -71,3 +71,50 @@ CREATE TABLE IF NOT EXISTS cell_events (
 
 CREATE INDEX IF NOT EXISTS idx_cell_events_cell ON cell_events(cell_id);
 `
+
+const migrationSessions = `
+CREATE TABLE IF NOT EXISTS sessions (
+    session_id TEXT PRIMARY KEY,
+    agent_name TEXT,
+    project_path TEXT,
+    started_at TEXT,
+    ended_at TEXT,
+    handoff_notes TEXT,
+    active_cell_id TEXT
+);
+`
+
+const migrationMessages = `
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_agent TEXT,
+    to_agents TEXT,
+    subject TEXT,
+    body TEXT,
+    importance TEXT DEFAULT 'normal',
+    thread_id TEXT,
+    ack_required INTEGER DEFAULT 0,
+    acknowledged INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_from_agent ON messages(from_agent);
+CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
+`
+
+const migrationReservations = `
+CREATE TABLE IF NOT EXISTS reservations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_name TEXT,
+    project_path TEXT,
+    path TEXT,
+    exclusive INTEGER DEFAULT 1,
+    reason TEXT,
+    ttl_seconds INTEGER DEFAULT 300,
+    created_at TEXT DEFAULT (datetime('now')),
+    expires_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_reservations_path ON reservations(path);
+CREATE INDEX IF NOT EXISTS idx_reservations_agent ON reservations(agent_name);
+`
