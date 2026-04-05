@@ -105,7 +105,7 @@ func (c *Client) Health() error {
 	return err
 }
 
-// Store proxies to dewey_dewey_store_learning with a deprecation warning.
+// Store proxies to store_learning with a deprecation warning.
 func (c *Client) Store(information, tags string) (map[string]any, error) {
 	params := map[string]any{
 		"information": information,
@@ -114,7 +114,7 @@ func (c *Client) Store(information, tags string) (map[string]any, error) {
 		params["tags"] = tags
 	}
 
-	result, err := c.Call("dewey_dewey_store_learning", params)
+	result, err := c.Call("store_learning", params)
 	if err != nil {
 		return nil, err
 	}
@@ -126,12 +126,12 @@ func (c *Client) Store(information, tags string) (map[string]any, error) {
 	}
 
 	// Add deprecation warning to response.
-	parsed["_warning"] = "hivemind_store is deprecated. Use dewey_dewey_store_learning directly."
+	parsed["_warning"] = "hivemind_store is deprecated. Use dewey_store_learning directly."
 
 	return parsed, nil
 }
 
-// Find proxies to dewey_dewey_semantic_search with a deprecation warning.
+// Find proxies to semantic_search with a deprecation warning.
 func (c *Client) Find(query, collection string, limit int) (map[string]any, error) {
 	params := map[string]any{
 		"query": query,
@@ -144,7 +144,7 @@ func (c *Client) Find(query, collection string, limit int) (map[string]any, erro
 		params["source_type"] = collection
 	}
 
-	result, err := c.Call("dewey_dewey_semantic_search", params)
+	result, err := c.Call("semantic_search", params)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (c *Client) Find(query, collection string, limit int) (map[string]any, erro
 	}
 
 	// Add deprecation warning to response.
-	parsed["_warning"] = "hivemind_find is deprecated. Use dewey_dewey_semantic_search directly."
+	parsed["_warning"] = "hivemind_find is deprecated. Use dewey_semantic_search directly."
 
 	return parsed, nil
 }
