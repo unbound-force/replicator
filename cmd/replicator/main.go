@@ -13,8 +13,12 @@ import (
 	"github.com/unbound-force/replicator/internal/config"
 )
 
-// Version is set at build time via ldflags.
-var Version = "dev"
+// Build-time variables set via ldflags.
+var (
+	Version = "dev"
+	commit  = "unknown"
+	date    = "unknown"
+)
 
 func main() {
 	root := &cobra.Command{
@@ -74,6 +78,12 @@ func versionCmd() *cobra.Command {
 		Short: "Print version information",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("replicator %s\n", Version)
+			if commit != "unknown" {
+				fmt.Printf("  commit: %s\n", commit)
+			}
+			if date != "unknown" {
+				fmt.Printf("  built:  %s\n", date)
+			}
 		},
 	}
 }

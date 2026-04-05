@@ -1,0 +1,65 @@
+version: 2
+
+builds:
+  - id: replicator
+    main: ./cmd/replicator
+    binary: replicator
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.Version={{.Tag}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.CommitDate}}
+
+archives:
+  - formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: >-
+      replicator_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  use: github
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+    - title: Documentation
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+    - title: Others
+      order: 999
+  filters:
+    exclude:
+      - '^chore:'
+
+homebrew_casks:
+  - name: replicator
+    description: "Multi-agent coordination for AI coding agents"
+    homepage: "https://github.com/unbound-force/replicator"
+    directory: Casks
+    skip_upload: true
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/replicator"]
+          end
+    repository:
+      owner: unbound-force
+      name: homebrew-tap
