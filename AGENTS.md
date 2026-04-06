@@ -235,6 +235,7 @@ make install  # Install to GOPATH/bin
 | `replicator doctor` | Check environment health |
 | `replicator stats` | Display activity summary |
 | `replicator query` | Run preset SQL analytics queries |
+| `replicator docs` | Generate MCP tool reference (markdown) |
 | `replicator version` | Print version, commit, build date |
 
 ## Project Structure

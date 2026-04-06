@@ -43,6 +43,7 @@ via Dewey).`,
 	root.AddCommand(queryCmd())
 	root.AddCommand(setupCmd())
 	root.AddCommand(initCmd())
+	root.AddCommand(docsCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
