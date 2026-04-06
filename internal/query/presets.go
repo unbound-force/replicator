@@ -2,7 +2,7 @@
 //
 // Each preset is a named SQL query that produces a styled table.
 // Presets cover common observability needs: agent activity, cell status,
-// swarm completion rates, and recent events.
+// forge completion rates, and recent events.
 package query
 
 import (
@@ -18,7 +18,7 @@ import (
 const (
 	AgentActivity24h    = "agent_activity_24h"
 	CellsByStatus       = "cells_by_status"
-	SwarmCompletionRate = "swarm_completion_rate"
+	ForgeCompletionRate = "forge_completion_rate"
 	RecentEvents        = "recent_events"
 )
 
@@ -27,7 +27,7 @@ func ListPresets() []string {
 	return []string{
 		AgentActivity24h,
 		CellsByStatus,
-		SwarmCompletionRate,
+		ForgeCompletionRate,
 		RecentEvents,
 	}
 }
@@ -39,8 +39,8 @@ func Run(store *db.Store, presetName string, w io.Writer) error {
 		return runAgentActivity(store, w)
 	case CellsByStatus:
 		return runCellsByStatus(store, w)
-	case SwarmCompletionRate:
-		return runSwarmCompletionRate(store, w)
+	case ForgeCompletionRate:
+		return runForgeCompletionRate(store, w)
 	case RecentEvents:
 		return runRecentEvents(store, w)
 	default:
@@ -122,22 +122,22 @@ func runCellsByStatus(store *db.Store, w io.Writer) error {
 	return nil
 }
 
-func runSwarmCompletionRate(store *db.Store, w io.Writer) error {
+func runForgeCompletionRate(store *db.Store, w io.Writer) error {
 	styles := ui.NewStyles(w)
 
-	// Count completed vs total swarm events.
+	// Count completed vs total forge events.
 	var total, completed int
-	store.DB.QueryRow(`SELECT COUNT(*) FROM events WHERE type LIKE 'swarm_%'`).Scan(&total)
-	store.DB.QueryRow(`SELECT COUNT(*) FROM events WHERE type = 'swarm_complete'`).Scan(&completed)
+	store.DB.QueryRow(`SELECT COUNT(*) FROM events WHERE type LIKE 'forge_%'`).Scan(&total)
+	store.DB.QueryRow(`SELECT COUNT(*) FROM events WHERE type = 'forge_complete'`).Scan(&completed)
 
-	fmt.Fprintln(w, styles.Bold.Render("Swarm Completion Rate:"))
-	fmt.Fprintf(w, "  Total swarm events:     %d\n", total)
+	fmt.Fprintln(w, styles.Bold.Render("Forge Completion Rate:"))
+	fmt.Fprintf(w, "  Total forge events:     %d\n", total)
 	fmt.Fprintf(w, "  Completed:              %d\n", completed)
 	if total > 0 {
 		rate := float64(completed) / float64(total) * 100
 		fmt.Fprintf(w, "  Completion rate:        %.1f%%\n", rate)
 	} else {
-		fmt.Fprintln(w, styles.Dim.Render("  Completion rate:        N/A (no swarm events)"))
+		fmt.Fprintln(w, styles.Dim.Render("  Completion rate:        N/A (no forge events)"))
 	}
 	return nil
 }

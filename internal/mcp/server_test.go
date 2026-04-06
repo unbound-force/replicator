@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/unbound-force/replicator/internal/db"
-	"github.com/unbound-force/replicator/internal/tools/hive"
+	"github.com/unbound-force/replicator/internal/tools/org"
 	"github.com/unbound-force/replicator/internal/tools/registry"
 )
 
@@ -55,7 +55,7 @@ func testServer(t *testing.T) (*Server, *db.Store, *testLogger) {
 	t.Cleanup(func() { store.Close() })
 
 	reg := registry.New()
-	hive.Register(reg, store)
+	org.Register(reg, store)
 	logger := &testLogger{}
 	return NewServer(reg, "test", logger), store, logger
 }
@@ -101,9 +101,9 @@ func TestToolsList(t *testing.T) {
 		names[tool.Name] = true
 	}
 	for _, expected := range []string{
-		"hive_cells", "hive_create", "hive_close", "hive_update",
-		"hive_create_epic", "hive_query", "hive_start", "hive_ready",
-		"hive_sync", "hive_session_start", "hive_session_end",
+		"org_cells", "org_create", "org_close", "org_update",
+		"org_create_epic", "org_query", "org_start", "org_ready",
+		"org_sync", "org_session_start", "org_session_end",
 	} {
 		if !names[expected] {
 			t.Errorf("missing tool: %s", expected)
@@ -111,10 +111,10 @@ func TestToolsList(t *testing.T) {
 	}
 }
 
-func TestToolsCall_HiveCells_Empty(t *testing.T) {
+func TestToolsCall_OrgCells_Empty(t *testing.T) {
 	s, _, _ := testServer(t)
 	result := call(t, s, "tools/call", toolsCallParams{
-		Name:      "hive_cells",
+		Name:      "org_cells",
 		Arguments: json.RawMessage(`{}`),
 	})
 
@@ -129,10 +129,10 @@ func TestToolsCall_HiveCells_Empty(t *testing.T) {
 	}
 }
 
-func TestToolsCall_HiveCreate(t *testing.T) {
+func TestToolsCall_OrgCreate(t *testing.T) {
 	s, _, _ := testServer(t)
 	result := call(t, s, "tools/call", toolsCallParams{
-		Name:      "hive_create",
+		Name:      "org_create",
 		Arguments: json.RawMessage(`{"title": "Test cell", "type": "bug"}`),
 	})
 
@@ -159,13 +159,13 @@ func TestToolsCall_CreateThenQuery(t *testing.T) {
 
 	// Create a cell.
 	call(t, s, "tools/call", toolsCallParams{
-		Name:      "hive_create",
+		Name:      "org_create",
 		Arguments: json.RawMessage(`{"title": "My task"}`),
 	})
 
 	// Query cells.
 	result := call(t, s, "tools/call", toolsCallParams{
-		Name:      "hive_cells",
+		Name:      "org_cells",
 		Arguments: json.RawMessage(`{}`),
 	})
 
@@ -214,7 +214,7 @@ func TestToolsCall_LogsToolName(t *testing.T) {
 	s, _, logger := testServer(t)
 
 	call(t, s, "tools/call", toolsCallParams{
-		Name:      "hive_cells",
+		Name:      "org_cells",
 		Arguments: json.RawMessage(`{}`),
 	})
 
@@ -233,8 +233,8 @@ func TestToolsCall_LogsToolName(t *testing.T) {
 
 	// Verify keyvals contain "tool" and "duration".
 	kvMap := keyvalMap(entry.Keyvals)
-	if kvMap["tool"] != "hive_cells" {
-		t.Errorf("log tool = %v, want %q", kvMap["tool"], "hive_cells")
+	if kvMap["tool"] != "org_cells" {
+		t.Errorf("log tool = %v, want %q", kvMap["tool"], "org_cells")
 	}
 	if _, ok := kvMap["duration"]; !ok {
 		t.Error("log entry missing 'duration' key")
@@ -249,11 +249,11 @@ func TestToolsCall_LogsMultipleCalls(t *testing.T) {
 
 	// Two tool calls should produce two log entries.
 	call(t, s, "tools/call", toolsCallParams{
-		Name:      "hive_cells",
+		Name:      "org_cells",
 		Arguments: json.RawMessage(`{}`),
 	})
 	call(t, s, "tools/call", toolsCallParams{
-		Name:      "hive_create",
+		Name:      "org_create",
 		Arguments: json.RawMessage(`{"title":"logged"}`),
 	})
 
@@ -264,11 +264,11 @@ func TestToolsCall_LogsMultipleCalls(t *testing.T) {
 
 	kv0 := keyvalMap(entries[0].Keyvals)
 	kv1 := keyvalMap(entries[1].Keyvals)
-	if kv0["tool"] != "hive_cells" {
-		t.Errorf("first call tool = %v, want hive_cells", kv0["tool"])
+	if kv0["tool"] != "org_cells" {
+		t.Errorf("first call tool = %v, want org_cells", kv0["tool"])
 	}
-	if kv1["tool"] != "hive_create" {
-		t.Errorf("second call tool = %v, want hive_create", kv1["tool"])
+	if kv1["tool"] != "org_create" {
+		t.Errorf("second call tool = %v, want org_create", kv1["tool"])
 	}
 }
 
@@ -281,12 +281,12 @@ func TestNewServer_NilLogger(t *testing.T) {
 	defer store.Close()
 
 	reg := registry.New()
-	hive.Register(reg, store)
+	org.Register(reg, store)
 	s := NewServer(reg, "test", nil)
 
 	// Should not panic.
 	call(t, s, "tools/call", toolsCallParams{
-		Name:      "hive_cells",
+		Name:      "org_cells",
 		Arguments: json.RawMessage(`{}`),
 	})
 }

@@ -12,11 +12,11 @@ import (
 	"github.com/unbound-force/replicator/internal/db"
 	"github.com/unbound-force/replicator/internal/mcp"
 	"github.com/unbound-force/replicator/internal/memory"
-	"github.com/unbound-force/replicator/internal/tools/hive"
+	commstools "github.com/unbound-force/replicator/internal/tools/comms"
+	forgetools "github.com/unbound-force/replicator/internal/tools/forge"
 	memorytools "github.com/unbound-force/replicator/internal/tools/memory"
+	"github.com/unbound-force/replicator/internal/tools/org"
 	"github.com/unbound-force/replicator/internal/tools/registry"
-	swarmtools "github.com/unbound-force/replicator/internal/tools/swarm"
-	swarmmailtools "github.com/unbound-force/replicator/internal/tools/swarmmail"
 )
 
 // serveMCP starts the MCP JSON-RPC server on stdio.
@@ -37,9 +37,9 @@ func serveMCP() error {
 	defer store.Close()
 
 	reg := registry.New()
-	hive.Register(reg, store)
-	swarmmailtools.Register(reg, store)
-	swarmtools.Register(reg, store)
+	org.Register(reg, store)
+	commstools.Register(reg, store)
+	forgetools.Register(reg, store)
 
 	// Memory tools proxy to Dewey for semantic search.
 	memClient := memory.NewClient(cfg.DeweyURL)

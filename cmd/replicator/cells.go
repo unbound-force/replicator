@@ -7,7 +7,7 @@ import (
 
 	"github.com/unbound-force/replicator/internal/config"
 	"github.com/unbound-force/replicator/internal/db"
-	"github.com/unbound-force/replicator/internal/hive"
+	"github.com/unbound-force/replicator/internal/org"
 )
 
 // jsonOutput controls whether cells are printed as JSON or a styled table.
@@ -22,7 +22,7 @@ func listCells(cfg *config.Config) error {
 	}
 	defer store.Close()
 
-	cells, err := hive.QueryCells(store, hive.CellQuery{})
+	cells, err := org.QueryCells(store, org.CellQuery{})
 	if err != nil {
 		return fmt.Errorf("query cells: %w", err)
 	}
@@ -36,5 +36,5 @@ func listCells(cfg *config.Config) error {
 		return nil
 	}
 
-	return hive.FormatCells(cells, os.Stdout)
+	return org.FormatCells(cells, os.Stdout)
 }

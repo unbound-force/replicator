@@ -7,11 +7,11 @@ import (
 
 	"github.com/unbound-force/replicator/internal/db"
 	"github.com/unbound-force/replicator/internal/memory"
-	"github.com/unbound-force/replicator/internal/tools/hive"
+	commstools "github.com/unbound-force/replicator/internal/tools/comms"
+	forgetools "github.com/unbound-force/replicator/internal/tools/forge"
 	memorytools "github.com/unbound-force/replicator/internal/tools/memory"
+	"github.com/unbound-force/replicator/internal/tools/org"
 	"github.com/unbound-force/replicator/internal/tools/registry"
-	swarmtools "github.com/unbound-force/replicator/internal/tools/swarm"
-	swarmmailtools "github.com/unbound-force/replicator/internal/tools/swarmmail"
 )
 
 func buildFullRegistry(t *testing.T) *registry.Registry {
@@ -23,9 +23,9 @@ func buildFullRegistry(t *testing.T) *registry.Registry {
 	t.Cleanup(func() { store.Close() })
 
 	reg := registry.New()
-	hive.Register(reg, store)
-	swarmmailtools.Register(reg, store)
-	swarmtools.Register(reg, store)
+	org.Register(reg, store)
+	commstools.Register(reg, store)
+	forgetools.Register(reg, store)
 	memClient := memory.NewClient("http://localhost:3333/mcp/")
 	memorytools.Register(reg, memClient)
 	return reg
@@ -56,7 +56,7 @@ func TestWriteDocs_HasCategoryHeaders(t *testing.T) {
 	writeDocs(&buf, reg)
 	output := buf.String()
 
-	for _, header := range []string{"## Hive", "## Swarm Mail", "## Swarm", "## Memory"} {
+	for _, header := range []string{"## Org", "## Comms", "## Forge", "## Memory"} {
 		if !strings.Contains(output, header) {
 			t.Errorf("missing category header: %q", header)
 		}

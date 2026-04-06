@@ -47,9 +47,9 @@ func TestRun_WithEvents(t *testing.T) {
 
 	// Insert some events.
 	for i := 0; i < 3; i++ {
-		store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES (?, '{}', 'test')`, "swarm_init")
+		store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES (?, '{}', 'test')`, "forge_init")
 	}
-	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES (?, '{}', 'test')`, "swarm_complete")
+	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES (?, '{}', 'test')`, "forge_complete")
 
 	var buf bytes.Buffer
 	err := Run(store, &buf)
@@ -58,11 +58,11 @@ func TestRun_WithEvents(t *testing.T) {
 	}
 
 	output := buf.String()
-	if !strings.Contains(output, "swarm_init") {
-		t.Error("expected swarm_init in output")
+	if !strings.Contains(output, "forge_init") {
+		t.Error("expected forge_init in output")
 	}
-	if !strings.Contains(output, "swarm_complete") {
-		t.Error("expected swarm_complete in output")
+	if !strings.Contains(output, "forge_complete") {
+		t.Error("expected forge_complete in output")
 	}
 }
 
