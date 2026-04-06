@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/unbound-force/replicator/internal/config"
 	"github.com/unbound-force/replicator/internal/db"
 	"github.com/unbound-force/replicator/internal/query"
+	"github.com/unbound-force/replicator/internal/ui"
 )
 
 // runQuery executes a preset query and prints results.
@@ -21,13 +21,17 @@ func runQuery(cfg *config.Config, presetName string) error {
 	return query.Run(store, presetName, os.Stdout)
 }
 
-// listQueryPresets prints available preset names.
+// listQueryPresets prints available preset names with styled output.
 func listQueryPresets() {
-	fmt.Println("Available query presets:")
+	styles := ui.NewStyles(os.Stdout)
+
+	fmt.Println(styles.Bold.Render("Available query presets:"))
 	for _, p := range query.ListPresets() {
 		fmt.Printf("  %s\n", p)
 	}
 	fmt.Println()
-	fmt.Println("Usage: replicator query <preset>")
-	fmt.Printf("Example: replicator query %s\n", strings.Join(query.ListPresets()[:1], ""))
+	fmt.Println(styles.Dim.Render("Usage: replicator query <preset>"))
+	fmt.Printf("%s replicator query %s\n",
+		styles.Dim.Render("Example:"),
+		query.ListPresets()[0])
 }

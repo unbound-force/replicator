@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/unbound-force/replicator/internal/config"
+	"github.com/unbound-force/replicator/internal/ui"
 )
 
 // Build-time variables set via ldflags.
@@ -71,6 +72,7 @@ func cellsCmd() *cobra.Command {
 			return listCells(cfg)
 		},
 	}
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON instead of a styled table")
 	return cmd
 }
 
@@ -79,12 +81,13 @@ func versionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print version information",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("replicator %s\n", Version)
+			styles := ui.NewStyles(os.Stdout)
+			fmt.Printf("replicator %s\n", styles.Bold.Render(Version))
 			if commit != "unknown" {
-				fmt.Printf("  commit: %s\n", commit)
+				fmt.Printf("  commit: %s\n", styles.Dim.Render(commit))
 			}
 			if date != "unknown" {
-				fmt.Printf("  built:  %s\n", date)
+				fmt.Printf("  built:  %s\n", styles.Dim.Render(date))
 			}
 		},
 	}

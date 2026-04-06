@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/unbound-force/replicator/internal/db"
@@ -11,7 +12,41 @@ import (
 	"github.com/unbound-force/replicator/internal/tools/registry"
 )
 
-func testServer(t *testing.T) (*Server, *db.Store) {
+// testLogEntry records a single log call for test assertions.
+type testLogEntry struct {
+	Level   string
+	Msg     any
+	Keyvals []any
+}
+
+// testLogger implements the Logger interface for tests.
+// It captures all log calls so tests can assert on them.
+type testLogger struct {
+	mu      sync.Mutex
+	entries []testLogEntry
+}
+
+func (l *testLogger) Info(msg any, keyvals ...any) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.entries = append(l.entries, testLogEntry{Level: "info", Msg: msg, Keyvals: keyvals})
+}
+
+func (l *testLogger) Warn(msg any, keyvals ...any) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.entries = append(l.entries, testLogEntry{Level: "warn", Msg: msg, Keyvals: keyvals})
+}
+
+func (l *testLogger) Entries() []testLogEntry {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	cp := make([]testLogEntry, len(l.entries))
+	copy(cp, l.entries)
+	return cp
+}
+
+func testServer(t *testing.T) (*Server, *db.Store, *testLogger) {
 	t.Helper()
 	store, err := db.OpenMemory()
 	if err != nil {
@@ -21,7 +56,8 @@ func testServer(t *testing.T) (*Server, *db.Store) {
 
 	reg := registry.New()
 	hive.Register(reg, store)
-	return NewServer(reg, "test"), store
+	logger := &testLogger{}
+	return NewServer(reg, "test", logger), store, logger
 }
 
 func call(t *testing.T, s *Server, method string, params any) json.RawMessage {
@@ -48,7 +84,7 @@ func call(t *testing.T, s *Server, method string, params any) json.RawMessage {
 }
 
 func TestToolsList(t *testing.T) {
-	s, _ := testServer(t)
+	s, _, _ := testServer(t)
 	result := call(t, s, "tools/list", nil)
 
 	var list toolsListResult
@@ -76,7 +112,7 @@ func TestToolsList(t *testing.T) {
 }
 
 func TestToolsCall_HiveCells_Empty(t *testing.T) {
-	s, _ := testServer(t)
+	s, _, _ := testServer(t)
 	result := call(t, s, "tools/call", toolsCallParams{
 		Name:      "hive_cells",
 		Arguments: json.RawMessage(`{}`),
@@ -94,7 +130,7 @@ func TestToolsCall_HiveCells_Empty(t *testing.T) {
 }
 
 func TestToolsCall_HiveCreate(t *testing.T) {
-	s, _ := testServer(t)
+	s, _, _ := testServer(t)
 	result := call(t, s, "tools/call", toolsCallParams{
 		Name:      "hive_create",
 		Arguments: json.RawMessage(`{"title": "Test cell", "type": "bug"}`),
@@ -119,7 +155,7 @@ func TestToolsCall_HiveCreate(t *testing.T) {
 }
 
 func TestToolsCall_CreateThenQuery(t *testing.T) {
-	s, _ := testServer(t)
+	s, _, _ := testServer(t)
 
 	// Create a cell.
 	call(t, s, "tools/call", toolsCallParams{
@@ -148,7 +184,7 @@ func TestToolsCall_CreateThenQuery(t *testing.T) {
 }
 
 func TestToolsCall_UnknownTool(t *testing.T) {
-	s, _ := testServer(t)
+	s, _, _ := testServer(t)
 
 	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"nonexistent","arguments":{}}}` + "\n"
 	var buf bytes.Buffer
@@ -163,7 +199,7 @@ func TestToolsCall_UnknownTool(t *testing.T) {
 }
 
 func TestInitialize(t *testing.T) {
-	s, _ := testServer(t)
+	s, _, _ := testServer(t)
 	result := call(t, s, "initialize", map[string]any{})
 
 	var initResult map[string]any
@@ -172,4 +208,97 @@ func TestInitialize(t *testing.T) {
 	if initResult["protocolVersion"] != "2024-11-05" {
 		t.Errorf("protocolVersion = %v", initResult["protocolVersion"])
 	}
+}
+
+func TestToolsCall_LogsToolName(t *testing.T) {
+	s, _, logger := testServer(t)
+
+	call(t, s, "tools/call", toolsCallParams{
+		Name:      "hive_cells",
+		Arguments: json.RawMessage(`{}`),
+	})
+
+	entries := logger.Entries()
+	if len(entries) == 0 {
+		t.Fatal("expected at least one log entry after tool call")
+	}
+
+	entry := entries[0]
+	if entry.Level != "info" {
+		t.Errorf("log level = %q, want %q", entry.Level, "info")
+	}
+	if entry.Msg != "tool call" {
+		t.Errorf("log msg = %v, want %q", entry.Msg, "tool call")
+	}
+
+	// Verify keyvals contain "tool" and "duration".
+	kvMap := keyvalMap(entry.Keyvals)
+	if kvMap["tool"] != "hive_cells" {
+		t.Errorf("log tool = %v, want %q", kvMap["tool"], "hive_cells")
+	}
+	if _, ok := kvMap["duration"]; !ok {
+		t.Error("log entry missing 'duration' key")
+	}
+	if kvMap["success"] != true {
+		t.Errorf("log success = %v, want true", kvMap["success"])
+	}
+}
+
+func TestToolsCall_LogsMultipleCalls(t *testing.T) {
+	s, _, logger := testServer(t)
+
+	// Two tool calls should produce two log entries.
+	call(t, s, "tools/call", toolsCallParams{
+		Name:      "hive_cells",
+		Arguments: json.RawMessage(`{}`),
+	})
+	call(t, s, "tools/call", toolsCallParams{
+		Name:      "hive_create",
+		Arguments: json.RawMessage(`{"title":"logged"}`),
+	})
+
+	entries := logger.Entries()
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 log entries, got %d", len(entries))
+	}
+
+	kv0 := keyvalMap(entries[0].Keyvals)
+	kv1 := keyvalMap(entries[1].Keyvals)
+	if kv0["tool"] != "hive_cells" {
+		t.Errorf("first call tool = %v, want hive_cells", kv0["tool"])
+	}
+	if kv1["tool"] != "hive_create" {
+		t.Errorf("second call tool = %v, want hive_create", kv1["tool"])
+	}
+}
+
+func TestNewServer_NilLogger(t *testing.T) {
+	// A nil logger must not panic during tool calls.
+	store, err := db.OpenMemory()
+	if err != nil {
+		t.Fatalf("OpenMemory: %v", err)
+	}
+	defer store.Close()
+
+	reg := registry.New()
+	hive.Register(reg, store)
+	s := NewServer(reg, "test", nil)
+
+	// Should not panic.
+	call(t, s, "tools/call", toolsCallParams{
+		Name:      "hive_cells",
+		Arguments: json.RawMessage(`{}`),
+	})
+}
+
+// keyvalMap converts a flat keyval slice (key, value, key, value, ...)
+// into a map for easier test assertions.
+func keyvalMap(kvs []any) map[string]any {
+	m := make(map[string]any)
+	for i := 0; i+1 < len(kvs); i += 2 {
+		if k, ok := kvs[i].(string); ok {
+			m[k] = kvs[i+1]
+		}
+	}
+	return m
 }

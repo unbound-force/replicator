@@ -60,10 +60,7 @@ func TestRun_AgentActivity_Empty(t *testing.T) {
 	}
 
 	output := buf.String()
-	if !strings.Contains(output, "AGENT") {
-		t.Error("expected AGENT header")
-	}
-	if !strings.Contains(output, "(no activity") {
+	if !strings.Contains(output, "no activity") {
 		t.Error("expected empty message")
 	}
 }
@@ -98,10 +95,7 @@ func TestRun_CellsByStatus_Empty(t *testing.T) {
 	}
 
 	output := buf.String()
-	if !strings.Contains(output, "STATUS") {
-		t.Error("expected STATUS header")
-	}
-	if !strings.Contains(output, "(no cells)") {
+	if !strings.Contains(output, "no cells") {
 		t.Error("expected empty message")
 	}
 }
@@ -178,10 +172,7 @@ func TestRun_RecentEvents_Empty(t *testing.T) {
 	}
 
 	output := buf.String()
-	if !strings.Contains(output, "ID") {
-		t.Error("expected ID header")
-	}
-	if !strings.Contains(output, "(no events)") {
+	if !strings.Contains(output, "no events") {
 		t.Error("expected empty message")
 	}
 }

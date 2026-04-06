@@ -155,7 +155,8 @@ internal/
   doctor/             Health check engine
   stats/              Database activity summary
   query/              Preset SQL analytics
-  mcp/                MCP JSON-RPC server
+  mcp/                MCP JSON-RPC server + structured logging
+  ui/                 Centralized lipgloss styles + table helpers
   tools/
     registry/         Tool registration framework
     hive/             Hive tool handlers (11)

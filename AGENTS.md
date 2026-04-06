@@ -253,7 +253,8 @@ internal/
   doctor/             Health check engine
   stats/              Database statistics
   query/              Preset SQL queries
-  mcp/                MCP JSON-RPC server
+  mcp/                MCP JSON-RPC server + structured logging
+  ui/                 Centralized lipgloss styles + table helpers
   tools/
     registry/         Tool registration framework
     hive/             Hive tool handlers (11 tools)
@@ -271,6 +272,8 @@ originally by [Joel Hooks](https://github.com/joelhooks).
 ## Active Technologies
 - Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations) (001-go-rewrite-phases)
 - SQLite at `~/.config/swarm-tools/swarm.db` (WAL mode, compatible with cyborg-swarm) (001-go-rewrite-phases)
+- Go 1.25+ + `charmbracelet/lipgloss v1.1.0`, `charmbracelet/log v1.0.0`, `muesli/termenv v0.16.0`, `charmbracelet/lipgloss/table` (sub-package of lipgloss) (002-charm-ux)
+- SQLite via `modernc.org/sqlite` (unchanged) (002-charm-ux)
 
 ## Recent Changes
 - 001-go-rewrite-phases: Added Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations)

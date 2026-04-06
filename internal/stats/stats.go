@@ -1,7 +1,8 @@
 // Package stats provides database statistics for the replicator CLI.
 //
 // Queries the events and cells tables to produce a human-readable summary
-// of system activity and work item status.
+// of system activity and work item status. Uses lipgloss styling for
+// section headers and visual hierarchy.
 package stats
 
 import (
@@ -9,6 +10,7 @@ import (
 	"io"
 
 	"github.com/unbound-force/replicator/internal/db"
+	"github.com/unbound-force/replicator/internal/ui"
 )
 
 // eventCount holds a type and its count from the events table.
@@ -19,6 +21,8 @@ type eventCount struct {
 
 // Run queries the database for statistics and writes a formatted report.
 func Run(store *db.Store, w io.Writer) error {
+	styles := ui.NewStyles(w)
+
 	// Events by type.
 	eventCounts, err := queryEventCounts(store)
 	if err != nil {
@@ -43,25 +47,25 @@ func Run(store *db.Store, w io.Writer) error {
 		totalCells += c.Count
 	}
 
-	// Print report.
-	fmt.Fprintln(w, "=== Replicator Stats ===")
+	// Print report with styled headers.
+	fmt.Fprintln(w, styles.Title.Render("📊 Replicator Stats"))
 	fmt.Fprintln(w)
 
-	fmt.Fprintln(w, "Events by Type:")
+	fmt.Fprintln(w, styles.Bold.Render("Events by Type:"))
 	if len(eventCounts) == 0 {
-		fmt.Fprintln(w, "  (no events)")
+		fmt.Fprintln(w, styles.Dim.Render("  (no events)"))
 	}
 	for _, ec := range eventCounts {
 		fmt.Fprintf(w, "  %-30s %d\n", ec.Type, ec.Count)
 	}
 	fmt.Fprintln(w)
 
-	fmt.Fprintf(w, "Recent Activity (24h): %d events\n", recentCount)
+	fmt.Fprintf(w, "%s %d events\n", styles.Bold.Render("Recent Activity (24h):"), recentCount)
 	fmt.Fprintln(w)
 
-	fmt.Fprintf(w, "Cells (%d total):\n", totalCells)
+	fmt.Fprintln(w, styles.Bold.Render(fmt.Sprintf("Cells (%d total):", totalCells)))
 	if len(cellCounts) == 0 {
-		fmt.Fprintln(w, "  (no cells)")
+		fmt.Fprintln(w, styles.Dim.Render("  (no cells)"))
 	}
 	for _, cc := range cellCounts {
 		fmt.Fprintf(w, "  %-15s %d\n", cc.Type, cc.Count)
