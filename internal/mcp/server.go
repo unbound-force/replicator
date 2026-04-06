@@ -13,21 +13,32 @@ import (
 	"io"
 	"os"
 	"sync/atomic"
+	"time"
 
 	"github.com/unbound-force/replicator/internal/tools/registry"
 )
+
+// Logger is a minimal logging interface for the MCP server.
+// It is intentionally small so callers can use charmbracelet/log,
+// the standard library log/slog, or a test double.
+type Logger interface {
+	Info(msg any, keyvals ...any)
+	Warn(msg any, keyvals ...any)
+}
 
 // Server is an MCP JSON-RPC server.
 type Server struct {
 	registry *registry.Registry
 	version  string
+	logger   Logger
 	nextID   atomic.Int64
 }
 
 // NewServer creates an MCP server backed by the given tool registry.
 // The version string is reported in the initialize handshake.
-func NewServer(reg *registry.Registry, version string) *Server {
-	return &Server{registry: reg, version: version}
+// If logger is nil, tool call logging is silently skipped.
+func NewServer(reg *registry.Registry, version string, logger Logger) *Server {
+	return &Server{registry: reg, version: version, logger: logger}
 }
 
 // jsonrpcRequest is a JSON-RPC 2.0 request.
@@ -179,8 +190,14 @@ func (s *Server) handleToolsCall(req *jsonrpcRequest) *jsonrpcResponse {
 		}
 	}
 
+	start := time.Now()
 	result, err := tool.Execute(params.Arguments)
+	duration := time.Since(start)
+
 	if err != nil {
+		if s.logger != nil {
+			s.logger.Warn("tool error", "tool", params.Name, "duration", duration, "error", err)
+		}
 		return &jsonrpcResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
@@ -188,6 +205,10 @@ func (s *Server) handleToolsCall(req *jsonrpcRequest) *jsonrpcResponse {
 				Content: []contentBlock{{Type: "text", Text: fmt.Sprintf("Error: %v", err)}},
 			},
 		}
+	}
+
+	if s.logger != nil {
+		s.logger.Info("tool call", "tool", params.Name, "duration", duration, "success", true)
 	}
 
 	return &jsonrpcResponse{

@@ -1,6 +1,6 @@
 // Package query provides preset database queries for the replicator CLI.
 //
-// Each preset is a named SQL query that produces a human-readable table.
+// Each preset is a named SQL query that produces a styled table.
 // Presets cover common observability needs: agent activity, cell status,
 // swarm completion rates, and recent events.
 package query
@@ -8,8 +8,10 @@ package query
 import (
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/unbound-force/replicator/internal/db"
+	"github.com/unbound-force/replicator/internal/ui"
 )
 
 // Preset names.
@@ -59,23 +61,29 @@ func runAgentActivity(store *db.Store, w io.Writer) error {
 	}
 	defer rows.Close()
 
-	fmt.Fprintf(w, "%-30s %s\n", "AGENT", "EVENTS (24h)")
-	fmt.Fprintf(w, "%-30s %s\n", "-----", "------------")
+	styles := ui.NewStyles(w)
+	var tableRows [][]string
 
-	count := 0
 	for rows.Next() {
 		var agent string
 		var events int
 		if err := rows.Scan(&agent, &events); err != nil {
 			return err
 		}
-		fmt.Fprintf(w, "%-30s %d\n", agent, events)
-		count++
+		tableRows = append(tableRows, []string{agent, strconv.Itoa(events)})
 	}
-	if count == 0 {
-		fmt.Fprintln(w, "(no activity in last 24 hours)")
+	if err := rows.Err(); err != nil {
+		return err
 	}
-	return rows.Err()
+
+	if len(tableRows) == 0 {
+		fmt.Fprintln(w, styles.Dim.Render("(no activity in last 24 hours)"))
+		return nil
+	}
+
+	t := ui.NewTable(styles, []string{"AGENT", "EVENTS (24h)"}, tableRows)
+	fmt.Fprintln(w, t.String())
+	return nil
 }
 
 func runCellsByStatus(store *db.Store, w io.Writer) error {
@@ -89,39 +97,47 @@ func runCellsByStatus(store *db.Store, w io.Writer) error {
 	}
 	defer rows.Close()
 
-	fmt.Fprintf(w, "%-15s %-10s %s\n", "STATUS", "TYPE", "COUNT")
-	fmt.Fprintf(w, "%-15s %-10s %s\n", "------", "----", "-----")
+	styles := ui.NewStyles(w)
+	var tableRows [][]string
 
-	count := 0
 	for rows.Next() {
 		var status, cellType string
 		var n int
 		if err := rows.Scan(&status, &cellType, &n); err != nil {
 			return err
 		}
-		fmt.Fprintf(w, "%-15s %-10s %d\n", status, cellType, n)
-		count++
+		tableRows = append(tableRows, []string{status, cellType, strconv.Itoa(n)})
 	}
-	if count == 0 {
-		fmt.Fprintln(w, "(no cells)")
+	if err := rows.Err(); err != nil {
+		return err
 	}
-	return rows.Err()
+
+	if len(tableRows) == 0 {
+		fmt.Fprintln(w, styles.Dim.Render("(no cells)"))
+		return nil
+	}
+
+	t := ui.NewTable(styles, []string{"STATUS", "TYPE", "COUNT"}, tableRows)
+	fmt.Fprintln(w, t.String())
+	return nil
 }
 
 func runSwarmCompletionRate(store *db.Store, w io.Writer) error {
+	styles := ui.NewStyles(w)
+
 	// Count completed vs total swarm events.
 	var total, completed int
 	store.DB.QueryRow(`SELECT COUNT(*) FROM events WHERE type LIKE 'swarm_%'`).Scan(&total)
 	store.DB.QueryRow(`SELECT COUNT(*) FROM events WHERE type = 'swarm_complete'`).Scan(&completed)
 
-	fmt.Fprintln(w, "Swarm Completion Rate:")
+	fmt.Fprintln(w, styles.Bold.Render("Swarm Completion Rate:"))
 	fmt.Fprintf(w, "  Total swarm events:     %d\n", total)
 	fmt.Fprintf(w, "  Completed:              %d\n", completed)
 	if total > 0 {
 		rate := float64(completed) / float64(total) * 100
 		fmt.Fprintf(w, "  Completion rate:        %.1f%%\n", rate)
 	} else {
-		fmt.Fprintln(w, "  Completion rate:        N/A (no swarm events)")
+		fmt.Fprintln(w, styles.Dim.Render("  Completion rate:        N/A (no swarm events)"))
 	}
 	return nil
 }
@@ -137,21 +153,27 @@ func runRecentEvents(store *db.Store, w io.Writer) error {
 	}
 	defer rows.Close()
 
-	fmt.Fprintf(w, "%-6s %-25s %-20s %s\n", "ID", "TYPE", "PROJECT", "CREATED")
-	fmt.Fprintf(w, "%-6s %-25s %-20s %s\n", "--", "----", "-------", "-------")
+	styles := ui.NewStyles(w)
+	var tableRows [][]string
 
-	count := 0
 	for rows.Next() {
 		var id int
 		var eventType, projectKey, createdAt string
 		if err := rows.Scan(&id, &eventType, &projectKey, &createdAt); err != nil {
 			return err
 		}
-		fmt.Fprintf(w, "%-6d %-25s %-20s %s\n", id, eventType, projectKey, createdAt)
-		count++
+		tableRows = append(tableRows, []string{strconv.Itoa(id), eventType, projectKey, createdAt})
 	}
-	if count == 0 {
-		fmt.Fprintln(w, "(no events)")
+	if err := rows.Err(); err != nil {
+		return err
 	}
-	return rows.Err()
+
+	if len(tableRows) == 0 {
+		fmt.Fprintln(w, styles.Dim.Render("(no events)"))
+		return nil
+	}
+
+	t := ui.NewTable(styles, []string{"ID", "TYPE", "PROJECT", "CREATED"}, tableRows)
+	fmt.Fprintln(w, t.String())
+	return nil
 }

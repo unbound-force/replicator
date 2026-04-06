@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/unbound-force/replicator/internal/ui"
 )
 
 func initCmd() *cobra.Command {
@@ -27,12 +28,14 @@ global database (replicator setup) or any external services.`,
 }
 
 // runInit creates the .hive/ directory and seeds cells.json.
+// Uses styled output: green for success, dim for already-initialized.
 func runInit(targetDir string) error {
+	styles := ui.NewStyles(os.Stdout)
 	hiveDir := filepath.Join(targetDir, ".hive")
 
 	// Check if already initialized.
 	if info, err := os.Stat(hiveDir); err == nil && info.IsDir() {
-		fmt.Println("already initialized")
+		fmt.Println(styles.Dim.Render("already initialized"))
 		return nil
 	}
 
@@ -47,6 +50,6 @@ func runInit(targetDir string) error {
 		return fmt.Errorf("write cells.json: %w", err)
 	}
 
-	fmt.Println("initialized .hive/")
+	fmt.Println(styles.Pass.Render("initialized .hive/"))
 	return nil
 }
