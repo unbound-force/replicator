@@ -15,7 +15,7 @@ or synchronous interaction.
 - Tool outputs MUST be self-describing JSON with enough
   context for any consumer to interpret without consulting
   the producing tool.
-- Inter-agent communication MUST use the swarm mail
+- Inter-agent communication MUST use the comms
   messaging system, not ad-hoc coordination.
 
 **Rationale**: A swarm of autonomous agents cannot rely on
@@ -29,8 +29,8 @@ Replicator MUST be independently installable and usable
 without any other hero being present. Optional integrations
 MUST degrade gracefully.
 
-- The binary MUST deliver core value (hive, swarm mail,
-  orchestration) when deployed alone with no external
+- The binary MUST deliver core value (org, comms,
+  forge) when deployed alone with no external
   services running.
 - Dewey integration MUST degrade gracefully: when Dewey
   is unavailable, memory tools return structured

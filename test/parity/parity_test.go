@@ -22,11 +22,11 @@ import (
 
 	"github.com/unbound-force/replicator/internal/db"
 	"github.com/unbound-force/replicator/internal/memory"
-	hivetools "github.com/unbound-force/replicator/internal/tools/hive"
+	commstools "github.com/unbound-force/replicator/internal/tools/comms"
+	forgetools "github.com/unbound-force/replicator/internal/tools/forge"
 	memtools "github.com/unbound-force/replicator/internal/tools/memory"
+	orgtools "github.com/unbound-force/replicator/internal/tools/org"
 	"github.com/unbound-force/replicator/internal/tools/registry"
-	swarmtools "github.com/unbound-force/replicator/internal/tools/swarm"
-	swarmmailtools "github.com/unbound-force/replicator/internal/tools/swarmmail"
 )
 
 // fixtureEntry represents a single tool's fixture data.
@@ -84,9 +84,9 @@ func setupRegistry(t *testing.T) (*registry.Registry, *db.Store) {
 	reg := registry.New()
 
 	// Register all tool families.
-	hivetools.Register(reg, store)
-	swarmmailtools.Register(reg, store)
-	swarmtools.Register(reg, store)
+	orgtools.Register(reg, store)
+	commstools.Register(reg, store)
+	forgetools.Register(reg, store)
 
 	// Memory tools use a Dewey proxy client. For parity tests, we create
 	// a client pointing to a non-existent server -- the deprecated tools
@@ -165,32 +165,32 @@ func TestParity(t *testing.T) {
 	// Tools that need pre-existing data or special handling.
 	// These are tested in dedicated subtests below.
 	skipTools := map[string]string{
-		"hive_cells_with_data": "requires pre-existing data, tested separately",
-		"hive_close":           "requires pre-existing cell",
-		"hive_update":          "requires pre-existing cell",
-		"hive_start":           "requires pre-existing cell",
+		"org_cells_with_data": "requires pre-existing data, tested separately",
+		"org_close":           "requires pre-existing cell",
+		"org_update":          "requires pre-existing cell",
+		"org_start":           "requires pre-existing cell",
 	}
 
 	// Tools that need argument rewriting (e.g., project_path).
 	pathRewriteTools := map[string]bool{
-		"swarm_init":          true,
-		"swarm_worktree_list": true,
+		"forge_init":          true,
+		"forge_worktree_list": true,
 	}
 
 	var results []ToolResult
 
 	// Sort fixture names for deterministic execution order.
-	// This ensures hive_ready runs before hive_create (which would
-	// create cells and change the hive_ready response shape).
+	// This ensures org_ready runs before org_create (which would
+	// create cells and change the org_ready response shape).
 	names := make([]string, 0, len(fixtures))
 	for name := range fixtures {
 		names = append(names, name)
 	}
 	sort.Strings(names)
 
-	// Run empty-state tools first: hive_cells, hive_query, hive_ready
-	// must run before any hive_create calls populate the database.
-	emptyStateTools := []string{"hive_cells", "hive_query", "hive_ready"}
+	// Run empty-state tools first: org_cells, org_query, org_ready
+	// must run before any org_create calls populate the database.
+	emptyStateTools := []string{"org_cells", "org_query", "org_ready"}
 	for _, name := range emptyStateTools {
 		fixture, ok := fixtures[name]
 		if !ok {
@@ -204,9 +204,9 @@ func TestParity(t *testing.T) {
 
 	// Run remaining tools (excluding skip and already-run empty-state tools).
 	alreadyRun := map[string]bool{
-		"hive_cells": true,
-		"hive_query": true,
-		"hive_ready": true,
+		"org_cells": true,
+		"org_query": true,
+		"org_ready": true,
 	}
 	for _, name := range names {
 		if _, skip := skipTools[name]; skip {
@@ -224,22 +224,22 @@ func TestParity(t *testing.T) {
 	}
 
 	// Test tools that need pre-existing data.
-	t.Run("hive_close_with_data", func(t *testing.T) {
-		result := testToolWithSetup(t, reg, store, "hive_close", fixtures)
+	t.Run("org_close_with_data", func(t *testing.T) {
+		result := testToolWithSetup(t, reg, store, "org_close", fixtures)
 		results = append(results, result)
 	})
 
-	t.Run("hive_update_with_data", func(t *testing.T) {
-		result := testToolWithSetup(t, reg, store, "hive_update", fixtures)
+	t.Run("org_update_with_data", func(t *testing.T) {
+		result := testToolWithSetup(t, reg, store, "org_update", fixtures)
 		results = append(results, result)
 	})
 
-	t.Run("hive_start_with_data", func(t *testing.T) {
-		result := testToolWithSetup(t, reg, store, "hive_start", fixtures)
+	t.Run("org_start_with_data", func(t *testing.T) {
+		result := testToolWithSetup(t, reg, store, "org_start", fixtures)
 		results = append(results, result)
 	})
 
-	t.Run("hive_cells_with_data", func(t *testing.T) {
+	t.Run("org_cells_with_data", func(t *testing.T) {
 		result := testCellsWithData(t, reg, store, fixtures)
 		results = append(results, result)
 	})
@@ -347,7 +347,7 @@ func testToolWithSetup(t *testing.T, reg *registry.Registry, store *db.Store, to
 	}
 
 	// Create a cell to operate on.
-	createTool := reg.Get("hive_create")
+	createTool := reg.Get("org_create")
 	createResult, err := createTool.Execute(json.RawMessage(`{"title": "test cell for ` + toolName + `"}`))
 	if err != nil {
 		t.Fatalf("create cell for %s: %v", toolName, err)
@@ -409,10 +409,10 @@ func testToolWithSetup(t *testing.T, reg *registry.Registry, store *db.Store, to
 func testCellsWithData(t *testing.T, reg *registry.Registry, store *db.Store, fixtures map[string]fixtureEntry) ToolResult {
 	t.Helper()
 
-	fixture, ok := fixtures["hive_cells_with_data"]
+	fixture, ok := fixtures["org_cells_with_data"]
 	if !ok {
 		return ToolResult{
-			Name:  "hive_cells_with_data",
+			Name:  "org_cells_with_data",
 			Match: false,
 			Differences: []Difference{{
 				Path:         "$",
@@ -423,18 +423,18 @@ func testCellsWithData(t *testing.T, reg *registry.Registry, store *db.Store, fi
 	}
 
 	// Create a cell so the query returns data.
-	createTool := reg.Get("hive_create")
+	createTool := reg.Get("org_create")
 	_, err := createTool.Execute(json.RawMessage(`{"title": "test cell for query"}`))
 	if err != nil {
-		t.Fatalf("create cell for hive_cells_with_data: %v", err)
+		t.Fatalf("create cell for org_cells_with_data: %v", err)
 	}
 
 	// Query cells.
-	tool := reg.Get("hive_cells")
+	tool := reg.Get("org_cells")
 	goResult, err := tool.Execute(json.RawMessage(`{"status": "open"}`))
 	if err != nil {
 		return ToolResult{
-			Name:  "hive_cells_with_data",
+			Name:  "org_cells_with_data",
 			Match: false,
 			Differences: []Difference{{
 				Path:         "$",
@@ -451,13 +451,13 @@ func testCellsWithData(t *testing.T, reg *registry.Registry, store *db.Store, fi
 	match, diffs := ShapeMatch(expectedText, actualText)
 	if !match {
 		for _, d := range diffs {
-			t.Errorf("hive_cells_with_data shape mismatch at %s: expected %s, got %s",
+			t.Errorf("org_cells_with_data shape mismatch at %s: expected %s, got %s",
 				d.Path, d.ExpectedType, d.ActualType)
 		}
 	}
 
 	return ToolResult{
-		Name:        "hive_cells_with_data",
+		Name:        "org_cells_with_data",
 		Match:       match,
 		Differences: diffs,
 	}

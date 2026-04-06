@@ -27,7 +27,7 @@ func TestListPresets(t *testing.T) {
 	expected := map[string]bool{
 		AgentActivity24h:    true,
 		CellsByStatus:       true,
-		SwarmCompletionRate: true,
+		ForgeCompletionRate: true,
 		RecentEvents:        true,
 	}
 	for _, p := range presets {
@@ -69,9 +69,9 @@ func TestRun_AgentActivity_WithData(t *testing.T) {
 	store := testStore(t)
 
 	// Insert events with agent_name in payload.
-	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('swarm_init', '{"agent_name": "worker-1"}', 'test')`)
-	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('swarm_init', '{"agent_name": "worker-1"}', 'test')`)
-	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('swarm_init', '{"agent_name": "worker-2"}', 'test')`)
+	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('forge_init', '{"agent_name": "worker-1"}', 'test')`)
+	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('forge_init', '{"agent_name": "worker-1"}', 'test')`)
+	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('forge_init', '{"agent_name": "worker-2"}', 'test')`)
 
 	var buf bytes.Buffer
 	err := Run(store, AgentActivity24h, &buf)
@@ -122,17 +122,17 @@ func TestRun_CellsByStatus_WithData(t *testing.T) {
 	}
 }
 
-func TestRun_SwarmCompletionRate_Empty(t *testing.T) {
+func TestRun_ForgeCompletionRate_Empty(t *testing.T) {
 	store := testStore(t)
 	var buf bytes.Buffer
 
-	err := Run(store, SwarmCompletionRate, &buf)
+	err := Run(store, ForgeCompletionRate, &buf)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 
 	output := buf.String()
-	if !strings.Contains(output, "Swarm Completion Rate") {
+	if !strings.Contains(output, "Forge Completion Rate") {
 		t.Error("expected header")
 	}
 	if !strings.Contains(output, "N/A") {
@@ -140,21 +140,21 @@ func TestRun_SwarmCompletionRate_Empty(t *testing.T) {
 	}
 }
 
-func TestRun_SwarmCompletionRate_WithData(t *testing.T) {
+func TestRun_ForgeCompletionRate_WithData(t *testing.T) {
 	store := testStore(t)
 
-	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('swarm_init', '{}', 'test')`)
-	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('swarm_progress', '{}', 'test')`)
-	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('swarm_complete', '{}', 'test')`)
+	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('forge_init', '{}', 'test')`)
+	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('forge_progress', '{}', 'test')`)
+	store.DB.Exec(`INSERT INTO events (type, payload, project_key) VALUES ('forge_complete', '{}', 'test')`)
 
 	var buf bytes.Buffer
-	err := Run(store, SwarmCompletionRate, &buf)
+	err := Run(store, ForgeCompletionRate, &buf)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 
 	output := buf.String()
-	if !strings.Contains(output, "Total swarm events") {
+	if !strings.Contains(output, "Total forge events") {
 		t.Error("expected total count")
 	}
 	if !strings.Contains(output, "Completed") {

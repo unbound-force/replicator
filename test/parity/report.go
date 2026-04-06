@@ -18,8 +18,8 @@ type ToolResult struct {
 //
 //	Parity Report
 //	=============
-//	hive_cells      ✓
-//	hive_create     ✓
+//	org_cells       ✓
+//	org_create      ✓
 //	hivemind_find   ✗  $.content[0].text: expected object, got string
 //	---
 //	22/23 tools match (95.7%)

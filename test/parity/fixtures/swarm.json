@@ -1,18 +1,18 @@
 {
-  "swarm_init": {
-    "request": {"name": "swarm_init", "arguments": {"project_path": "/tmp/test"}},
+  "forge_init": {
+    "request": {"name": "forge_init", "arguments": {"project_path": "/tmp/test"}},
     "typescript_response": {"content": [{"type": "text", "text": "{\"status\":\"initialized\",\"project_path\":\"/tmp/test\",\"isolation\":\"reservation\",\"timestamp\":\"2025-01-01T00:00:00Z\"}"}]}
   },
-  "swarm_decompose": {
-    "request": {"name": "swarm_decompose", "arguments": {"task": "Build a feature"}},
+  "forge_decompose": {
+    "request": {"name": "forge_decompose", "arguments": {"task": "Build a feature"}},
     "typescript_response": {"content": [{"type": "text", "text": "## Task Decomposition"}]}
   },
-  "swarm_status": {
-    "request": {"name": "swarm_status", "arguments": {"epic_id": "cell-epic123", "project_key": "test"}},
+  "forge_status": {
+    "request": {"name": "forge_status", "arguments": {"epic_id": "cell-epic123", "project_key": "test"}},
     "typescript_response": {"content": [{"type": "text", "text": "{\"epic_id\":\"cell-epic123\",\"project_key\":\"test\",\"total\":0,\"counts\":{\"open\":0,\"in_progress\":0,\"blocked\":0,\"closed\":0},\"subtasks\":[]}"}]}
   },
-  "swarm_worktree_list": {
-    "request": {"name": "swarm_worktree_list", "arguments": {"project_path": "/tmp/test"}},
+  "forge_worktree_list": {
+    "request": {"name": "forge_worktree_list", "arguments": {"project_path": "/tmp/test"}},
     "typescript_response": {"content": [{"type": "text", "text": "{\"worktrees\":[],\"count\":0}"}]}
   }
 }

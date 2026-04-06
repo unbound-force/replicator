@@ -11,11 +11,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/unbound-force/replicator/internal/db"
 	"github.com/unbound-force/replicator/internal/memory"
-	"github.com/unbound-force/replicator/internal/tools/hive"
+	commstools "github.com/unbound-force/replicator/internal/tools/comms"
+	forgetools "github.com/unbound-force/replicator/internal/tools/forge"
 	memorytools "github.com/unbound-force/replicator/internal/tools/memory"
+	"github.com/unbound-force/replicator/internal/tools/org"
 	"github.com/unbound-force/replicator/internal/tools/registry"
-	swarmtools "github.com/unbound-force/replicator/internal/tools/swarm"
-	swarmmailtools "github.com/unbound-force/replicator/internal/tools/swarmmail"
 )
 
 func docsCmd() *cobra.Command {
@@ -26,7 +26,7 @@ func docsCmd() *cobra.Command {
 		Long: `Generates a markdown document listing all registered MCP tools
 with their names, descriptions, and argument schemas.
 
-Output is grouped by category: Hive, Swarm Mail, Swarm, Memory.`,
+Output is grouped by category: Org, Comms, Forge, Memory.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDocs(outputFlag)
 		},
@@ -45,9 +45,9 @@ func runDocs(outputPath string) error {
 	defer store.Close()
 
 	reg := registry.New()
-	hive.Register(reg, store)
-	swarmmailtools.Register(reg, store)
-	swarmtools.Register(reg, store)
+	org.Register(reg, store)
+	commstools.Register(reg, store)
+	forgetools.Register(reg, store)
 	memClient := memory.NewClient("http://localhost:3333/mcp/")
 	memorytools.Register(reg, memClient)
 
@@ -69,9 +69,9 @@ var categories = []struct {
 	prefix string
 	name   string
 }{
-	{"hive_", "Hive"},
-	{"swarmmail_", "Swarm Mail"},
-	{"swarm_", "Swarm"},
+	{"org_", "Org"},
+	{"comms_", "Comms"},
+	{"forge_", "Forge"},
 	{"hivemind_", "Memory"},
 }
 

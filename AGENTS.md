@@ -30,19 +30,19 @@ Use in-memory databases for tests (`db.OpenMemory()`).
 
 Tools are registered via the `registry` package and served
 over stdio JSON-RPC. Each tool has:
-- A name (e.g., `hive_cells`)
+- A name (e.g., `org_cells`)
 - A description
 - A JSON schema for arguments
 - An execute function
 
-### Naming Convention: The Hive Metaphor
+### Naming Convention
 
 | Concept | Name |
 |---------|------|
-| Work items | **Hive** |
+| Work items | **Org** |
 | Individual item | **Cell** |
-| Agent coordination | **Swarm** |
-| Messaging | **Swarm Mail** |
+| Agent coordination | **Forge** |
+| Messaging | **Comms** |
 | Parallel workers | **Workers** |
 | Task orchestrator | **Coordinator** |
 | File locks | **Reservations** |
@@ -55,7 +55,7 @@ core principles:
 
 1. **I. Autonomous Collaboration**: Tools are callable
    independently via MCP. Outputs are self-describing JSON.
-   Inter-agent communication uses swarm mail.
+   Inter-agent communication uses comms.
 2. **II. Composability First**: The binary works standalone.
    Dewey integration degrades gracefully. Database schema is
    compatible with cyborg-swarm.
@@ -227,10 +227,10 @@ make install  # Install to GOPATH/bin
 
 | Command | Purpose |
 |---------|---------|
-| `replicator init` | Per-repo setup: creates `.uf/replicator/` with empty `cells.json` |
+| `replicator init` | Per-repo setup: creates `.uf/replicator/` with empty `cells.json` + scaffolds agent kit |
 | `replicator setup` | Per-machine setup: creates `~/.config/uf/replicator/` + SQLite DB |
 | `replicator serve` | Start MCP JSON-RPC server on stdio |
-| `replicator cells` | List hive cells (work items) |
+| `replicator cells` | List org cells (work items) |
 | `replicator doctor` | Check environment health |
 | `replicator stats` | Display activity summary |
 | `replicator query` | Run preset SQL analytics queries |
@@ -242,11 +242,12 @@ make install  # Install to GOPATH/bin
 ```
 cmd/replicator/       CLI entrypoint (cobra)
 internal/
+  agentkit/           Embedded agent kit (commands, skills, agents)
   config/             Configuration
   db/                 SQLite + migrations (7 tables)
-  hive/               Cell domain logic (CRUD, epics, sessions, sync)
-  swarmmail/          Agent messaging + file reservations
-  swarm/              Orchestration (decompose, spawn, worktree, review, insights)
+  org/                Cell domain logic (CRUD, epics, sessions, sync)
+  comms/              Agent messaging + file reservations
+  forge/              Orchestration (decompose, spawn, worktree, review, insights)
   memory/             Dewey proxy + deprecated tool stubs
   gitutil/            Git worktree operations (os/exec)
   doctor/             Health check engine
@@ -256,9 +257,9 @@ internal/
   ui/                 Centralized lipgloss styles + table helpers
   tools/
     registry/         Tool registration framework
-    hive/             Hive tool handlers (11 tools)
-    swarmmail/        Swarm mail tool handlers (10 tools)
-    swarm/            Swarm tool handlers (24 tools)
+    org/              Org tool handlers (11 tools)
+    comms/            Comms tool handlers (10 tools)
+    forge/            Forge tool handlers (24 tools)
     memory/           Memory tool handlers (8 tools)
 test/parity/          Shape comparison engine + fixtures
 ```
@@ -273,6 +274,7 @@ originally by [Joel Hooks](https://github.com/joelhooks).
 - SQLite at `~/.config/uf/replicator/replicator.db` (WAL mode) (001-go-rewrite-phases)
 - Go 1.25+ + `charmbracelet/lipgloss v1.1.0`, `charmbracelet/log v1.0.0`, `muesli/termenv v0.16.0`, `charmbracelet/lipgloss/table` (sub-package of lipgloss) (002-charm-ux)
 - SQLite via `modernc.org/sqlite` (unchanged) (002-charm-ux)
+- Go 1.25+ + cobra (CLI), modernc.org/sqlite (pure Go SQLite), embed (stdlib) (003-rename-terminology)
 
 ## Recent Changes
 - 001-go-rewrite-phases: Added Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations)

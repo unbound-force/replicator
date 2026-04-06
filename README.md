@@ -15,8 +15,8 @@ Multi-agent coordination for AI coding agents. Single Go binary, zero runtime de
 All 5 implementation phases are complete:
 
 - [x] Phase 0: MCP server, SQLite, tool registry
-- [x] Phase 1: Hive (11 tools) + Swarm Mail (10 tools)
-- [x] Phase 2: Swarm Orchestration (24 tools)
+- [x] Phase 1: Org (11 tools) + Comms (10 tools)
+- [x] Phase 2: Forge Orchestration (24 tools)
 - [x] Phase 3: Memory / Dewey proxy (8 tools)
 - [x] Phase 4: CLI (9 commands)
 - [x] Phase 5: Parity testing (100% shape match)
@@ -76,9 +76,9 @@ Replicator exposes 53 tools via the [MCP protocol](https://modelcontextprotocol.
 
 | Category | Tools | Purpose |
 |----------|-------|---------|
-| **Hive** | 11 | Work item tracking: create, query, update, close, epics, sessions, sync |
-| **Swarm Mail** | 10 | Agent messaging: send, inbox, ack, file reservations |
-| **Swarm** | 24 | Orchestration: decompose, spawn, worktrees, progress, review, insights |
+| **Org** | 11 | Work item tracking: create, query, update, close, epics, sessions, sync |
+| **Comms** | 10 | Agent messaging: send, inbox, ack, file reservations |
+| **Forge** | 24 | Orchestration: decompose, spawn, worktrees, progress, review, insights |
 | **Memory** | 8 | Dewey proxy: store/find learnings, deprecated tool stubs |
 
 See the full [Tool Reference](docs/tools.md) for schemas and examples.
@@ -127,7 +127,7 @@ flowchart LR
     Agent["AI Agent\n(OpenCode, Claude)"]
     MCP["MCP Server\n(stdio JSON-RPC)"]
     Reg["Tool Registry\n(53 tools)"]
-    Domain["Domain Logic\n(hive, swarm, mail)"]
+    Domain["Domain Logic\n(org, forge, comms)"]
     DB["SQLite\n(WAL mode)"]
     Dewey["Dewey\n(semantic memory)"]
     Git["Git\n(worktrees)"]
@@ -145,11 +145,12 @@ flowchart LR
 ```
 cmd/replicator/       CLI entrypoint (cobra)
 internal/
+  agentkit/           Embedded agent kit (commands, skills, agents)
   config/             Configuration (env vars, defaults)
   db/                 SQLite + migrations (7 tables)
-  hive/               Cell CRUD, epics, sessions, sync
-  swarmmail/          Agent messaging, file reservations
-  swarm/              Decomposition, spawning, worktrees, review, insights
+  org/                Cell CRUD, epics, sessions, sync
+  comms/              Agent messaging, file reservations
+  forge/              Decomposition, spawning, worktrees, review, insights
   memory/             Dewey proxy, deprecated tool stubs
   gitutil/            Git worktree operations (os/exec)
   doctor/             Health check engine
@@ -159,9 +160,9 @@ internal/
   ui/                 Centralized lipgloss styles + table helpers
   tools/
     registry/         Tool registration framework
-    hive/             Hive tool handlers (11)
-    swarmmail/        Swarm mail tool handlers (10)
-    swarm/            Swarm tool handlers (24)
+    org/              Org tool handlers (11)
+    comms/            Comms tool handlers (10)
+    forge/            Forge tool handlers (24)
     memory/           Memory tool handlers (8)
 test/parity/          Shape comparison engine + fixtures
 docs/                 Generated tool reference
