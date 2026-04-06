@@ -10,7 +10,11 @@ builds:
       - darwin
       - linux
     goarch:
+      - amd64
       - arm64
+    ignore:
+      - goos: darwin
+        goarch: amd64
     ldflags:
       - -s -w
       - -X main.Version={{.Tag}}
