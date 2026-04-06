@@ -42,6 +42,7 @@ via Dewey).`,
 	root.AddCommand(statsCmd())
 	root.AddCommand(queryCmd())
 	root.AddCommand(setupCmd())
+	root.AddCommand(initCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

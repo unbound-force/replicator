@@ -224,6 +224,19 @@ make release  # GoReleaser dry-run
 make install  # Install to GOPATH/bin
 ```
 
+### CLI Commands
+
+| Command | Purpose |
+|---------|---------|
+| `replicator init` | Per-repo setup: creates `.hive/` with empty `cells.json` |
+| `replicator setup` | Per-machine setup: creates `~/.config/swarm-tools/` + SQLite DB |
+| `replicator serve` | Start MCP JSON-RPC server on stdio |
+| `replicator cells` | List hive cells (work items) |
+| `replicator doctor` | Check environment health |
+| `replicator stats` | Display activity summary |
+| `replicator query` | Run preset SQL analytics queries |
+| `replicator version` | Print version, commit, build date |
+
 ## Project Structure
 
 ```

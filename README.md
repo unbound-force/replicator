@@ -32,6 +32,9 @@ go install github.com/unbound-force/replicator/cmd/replicator@latest
 ## Usage
 
 ```bash
+# Initialize a project for swarm operations
+replicator init
+
 # Start MCP server (for AI agent connections)
 replicator serve
 
