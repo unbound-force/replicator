@@ -11,7 +11,7 @@ Complete the Go rewrite of cyborg-swarm across 5 phases: finish the hive tool su
 
 **Language/Version**: Go 1.25+
 **Primary Dependencies**: `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations)
-**Storage**: SQLite at `~/.config/swarm-tools/swarm.db` (WAL mode, compatible with cyborg-swarm)
+**Storage**: SQLite at `~/.config/uf/replicator/replicator.db` (WAL mode)
 **Testing**: `go test` (stdlib only, no testify — per TC-001)
 **Target Platform**: macOS/Linux arm64+amd64, Windows amd64 (via goreleaser)
 **Project Type**: CLI + MCP server (single binary)
@@ -147,7 +147,7 @@ Complete the hive tool suite by adding the 7 remaining tools to match the TypeSc
 | `hive_query` | `hive.QueryCells()` | existing | Already implemented as `hive_cells` — verify schema parity, may need alias |
 | `hive_start` | `hive.StartCell()` | `internal/hive/cells.go` | Set status=in_progress, record timestamp |
 | `hive_ready` | `hive.ReadyCell()` | `internal/hive/cells.go` | Return highest-priority unblocked cell |
-| `hive_sync` | `hive.Sync()` | `internal/hive/sync.go` | Serialize cells to `.hive/`, git add+commit |
+| `hive_sync` | `hive.Sync()` | `internal/hive/sync.go` | Serialize cells to `.uf/replicator/`, git add+commit |
 | `hive_session_start` | `hive.SessionStart()` | `internal/hive/session.go` | Create session, return previous handoff notes |
 | `hive_session_end` | `hive.SessionEnd()` | `internal/hive/session.go` | Save handoff notes for next session |
 
@@ -155,7 +155,7 @@ Complete the hive tool suite by adding the 7 remaining tools to match the TypeSc
 - `hive_create_epic`: Use `sql.Tx` for atomicity — insert epic row, then insert all subtask rows with `parent_id` pointing to the epic. Roll back on any failure.
 - `hive_start`: Simple status update with timestamp. Reuse `UpdateCell` pattern.
 - `hive_ready`: Query cells where `status='open'` and no parent cell is still open (unblocked). Order by `priority DESC`. Return first match.
-- `hive_sync`: Shell out to `git` via `internal/gitutil/` to add and commit `.hive/` directory contents.
+- `hive_sync`: Shell out to `git` via `internal/gitutil/` to add and commit `.uf/replicator/` directory contents.
 - `hive_session_start/end`: New `sessions` table in SQLite. Store handoff notes as JSON. Return previous session's notes on start.
 
 **Database changes**:
@@ -374,7 +374,7 @@ The `doctor` command checks for required dependencies and reports their status.
 | Git | `git --version` | Exit code 0, version ≥ 2.20 |
 | Database | Open and ping SQLite | No error |
 | Dewey | HTTP GET to health endpoint | 200 OK |
-| Config dir | `~/.config/swarm-tools/` exists | Directory exists |
+| Config dir | `~/.config/uf/replicator/` exists | Directory exists |
 
 **Implementation approach** (per AP-002, AP-003):
 - `doctor.Run(opts Options) (*Result, error)` — core logic, testable

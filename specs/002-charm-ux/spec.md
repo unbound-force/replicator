@@ -59,18 +59,18 @@ A developer uses setup, init, version, stats, and query commands and sees visual
 
 ### User Story 4 - Structured Logging with Per-Repo Log File (Priority: P2)
 
-When the MCP server runs (`replicator serve`), structured log messages are written to both stderr and a per-repo log file at `[repo]/.unbound-force/replicator.log`. The log file is truncated on each server startup so it only contains the current session's logs. CLI commands (doctor, cells, etc.) log to stderr only -- no log file.
+When the MCP server runs (`replicator serve`), structured log messages are written to both stderr and a per-repo log file at `[repo]/.uf/replicator/replicator.log`. The log file is truncated on each server startup so it only contains the current session's logs. CLI commands (doctor, cells, etc.) log to stderr only -- no log file.
 
 **Why this priority**: Debugging MCP tool calls is difficult without a persistent log. The per-repo log captures a full session's activity alongside the project it serves, without interleaving with other sessions.
 
-**Independent Test**: Start `replicator serve`, send several MCP requests, stop the server, and verify `[repo]/.unbound-force/replicator.log` contains structured log entries for each tool call. Restart the server and verify the log file is truncated.
+**Independent Test**: Start `replicator serve`, send several MCP requests, stop the server, and verify `[repo]/.uf/replicator/replicator.log` contains structured log entries for each tool call. Restart the server and verify the log file is truncated.
 
 **Acceptance Scenarios**:
 
-1. **Given** a project directory, **When** `replicator serve` starts, **Then** `.unbound-force/replicator.log` is created (truncating any existing file) and structured log entries begin writing.
+1. **Given** a project directory, **When** `replicator serve` starts, **Then** `.uf/replicator/replicator.log` is created (truncating any existing file) and structured log entries begin writing.
 2. **Given** the MCP server is running, **When** a `tools/call` request is processed, **Then** a log entry appears in both stderr and the log file with the tool name, duration, and success/error status.
 3. **Given** the MCP server is stopped and restarted, **When** the log file is inspected, **Then** it contains only entries from the most recent session (truncated on startup).
-4. **Given** a CLI command is run (not `serve`), **When** `replicator doctor` runs, **Then** no `.unbound-force/replicator.log` file is created or modified.
+4. **Given** a CLI command is run (not `serve`), **When** `replicator doctor` runs, **Then** no `.uf/replicator/replicator.log` file is created or modified.
 
 ---
 
@@ -78,7 +78,7 @@ When the MCP server runs (`replicator serve`), structured log messages are writt
 
 - What happens when the terminal does not support colors? The renderer detects the color profile and falls back to plain text automatically.
 - What happens when the cells table has very long titles? Titles are truncated to fit the terminal width, preserving the table structure.
-- What happens when `.unbound-force/` directory does not exist for logging? It is created with `0o755` permissions on `serve` startup.
+- What happens when `.uf/replicator/` directory does not exist for logging? It is created with `0o755` permissions on `serve` startup.
 - What happens when the log file cannot be written (permissions)? A warning is emitted to stderr (via `fmt.Fprintf`, not `charmbracelet/log`, since the logger itself failed to initialize -- bootstrap exception) and the server continues without file logging.
 - What happens when `NO_COLOR=1` is set? All lipgloss output uses the ASCII color profile, producing no escape codes. This is handled automatically by the renderer.
 - What happens when two `replicator serve` instances run in the same repo? Only one instance per repository is supported. Concurrent instances will produce interleaved log output in the shared log file. This is a known limitation.
@@ -97,7 +97,7 @@ When the MCP server runs (`replicator serve`), structured log messages are writt
 - **FR-006**: The setup, init, version, stats, and query commands MUST use the shared style system for indicators and headers.
 
 #### Logging (US4)
-- **FR-007**: The MCP server MUST write structured log messages to both stderr and a per-repo log file at `[repo]/.unbound-force/replicator.log`.
+- **FR-007**: The MCP server MUST write structured log messages to both stderr and a per-repo log file at `[repo]/.uf/replicator/replicator.log`.
 - **FR-008**: The log file MUST be truncated (not appended) on each `replicator serve` startup.
 - **FR-009**: Each MCP `tools/call` invocation MUST be logged with at minimum: tool name, duration, and success/error status.
 - **FR-010**: CLI commands (not `serve`) MUST log to stderr only -- no log file creation.
@@ -119,7 +119,7 @@ When the MCP server runs (`replicator serve`), structured log messages are writt
 - **SC-002**: The cells command renders a bordered table with per-row status coloring for 4+ cells in under 50 milliseconds.
 - **SC-003**: All 9 CLI commands use the shared style system -- zero commands produce raw `fmt.Printf` output in the final implementation.
 - **SC-004**: When piped (`replicator doctor | cat`), the output contains zero ANSI escape code sequences (verified by `grep -P '\x1b\['`).
-- **SC-005**: The MCP server log file at `.unbound-force/replicator.log` contains at least one structured entry per tool call, with tool name and duration.
+- **SC-005**: The MCP server log file at `.uf/replicator/replicator.log` contains at least one structured entry per tool call, with tool name and duration.
 - **SC-006**: Restarting `replicator serve` truncates the log file (file size resets to 0 before new entries).
 
 ## Assumptions
@@ -127,7 +127,7 @@ When the MCP server runs (`replicator serve`), structured log messages are writt
 - The existing `internal/doctor/checks.go` separation of health check logic from formatting is preserved -- only the formatting layer changes.
 - The `cells` command currently dumps raw JSON; it will switch to a human-readable table for TTY and retain JSON output for piped contexts (or with a `--json` flag).
 - The `docs` command output is markdown (not terminal-styled) and is excluded from lipgloss styling.
-- The log file path `.unbound-force/replicator.log` is relative to the working directory where `replicator serve` is launched (typically the project root).
+- The log file path `.uf/replicator/replicator.log` is relative to the working directory where `replicator serve` is launched (typically the project root).
 
 ## Dependencies
 

@@ -50,11 +50,11 @@ func serveMCP() error {
 }
 
 // setupLogger creates a charmbracelet/log logger that writes to both
-// stderr and .unbound-force/replicator.log. If the log file cannot be
+// stderr and .uf/replicator/replicator.log. If the log file cannot be
 // created, logging falls back to stderr only and a warning is printed.
 // The returned io.Closer should be deferred by the caller; it may be nil.
 func setupLogger() (*charmlog.Logger, io.Closer) {
-	logDir := filepath.Join(".", ".unbound-force")
+	logDir := filepath.Join(".", ".uf", "replicator")
 	if err := os.MkdirAll(logDir, 0o755); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: cannot create log directory: %v (logging to stderr only)\n", err)
 		return charmlog.NewWithOptions(os.Stderr, charmlog.Options{

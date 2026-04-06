@@ -293,7 +293,7 @@ func TestServeLogging_CreatesLogFile(t *testing.T) {
 │         [charmbracelet/log]                 │
 │              │       │                      │
 │              ▼       ▼                      │
-│          stderr    .unbound-force/          │
+│          stderr    .uf/replicator/           │
 │                    replicator.log           │
 └─────────────────────────────────────────────┘
 ```

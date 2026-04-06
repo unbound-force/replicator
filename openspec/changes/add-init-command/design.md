@@ -1,6 +1,6 @@
 ## Context
 
-Replicator has `setup` (per-machine: `~/.config/swarm-tools/` + SQLite) but no `init` (per-repo). The `uf` CLI needs `replicator init` to exist so it can delegate to it during `uf init`, following the same pattern as `dewey init`.
+Replicator has `setup` (per-machine: `~/.config/uf/replicator/` + SQLite) but no `init` (per-repo). The `uf` CLI needs `replicator init` to exist so it can delegate to it during `uf init`, following the same pattern as `dewey init`.
 
 The existing `setup.go` pattern: cobra command → `runSetup()` function → filesystem ops → print status. Follow this exactly.
 
