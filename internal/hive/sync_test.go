@@ -38,7 +38,7 @@ func TestSync(t *testing.T) {
 	}
 
 	// Verify cells.json was created.
-	cellsPath := filepath.Join(dir, ".hive", "cells.json")
+	cellsPath := filepath.Join(dir, ".uf", "replicator", "cells.json")
 	data, err := os.ReadFile(cellsPath)
 	if err != nil {
 		t.Fatalf("read cells.json: %v", err)
@@ -83,14 +83,14 @@ func TestSync_CreatesHiveDir(t *testing.T) {
 		}
 	}
 
-	// Sync with no cells -- should still create .hive/cells.json.
+	// Sync with no cells -- should still create .uf/replicator/cells.json.
 	if err := Sync(store, dir); err != nil {
 		t.Fatalf("Sync: %v", err)
 	}
 
-	hiveDir := filepath.Join(dir, ".hive")
+	hiveDir := filepath.Join(dir, ".uf", "replicator")
 	if _, err := os.Stat(hiveDir); os.IsNotExist(err) {
-		t.Error(".hive directory was not created")
+		t.Error(".uf/replicator directory was not created")
 	}
 }
 

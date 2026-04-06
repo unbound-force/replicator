@@ -121,7 +121,7 @@ A maintainer runs a parity test suite that compares the replicator's MCP tool re
 - What happens when `swarm_worktree_merge` encounters a conflict? The merge fails with a clear error listing the conflicting files, and the worktree is NOT cleaned up (allowing manual resolution).
 - What happens when Dewey is down during `hivemind_store`? The tool returns a structured error with code `DEWEY_UNAVAILABLE` and a hint to check the Dewey service.
 - What happens when a CLI command is run but no database exists? The database is auto-created with the full schema on first access.
-- How does the system handle the TypeScript cyborg-swarm's database during migration? The schema is wire-compatible -- the Go binary reads and writes the same SQLite database file at `~/.config/swarm-tools/swarm.db`.
+- How does the system handle the TypeScript cyborg-swarm's database during migration? The schema is wire-compatible -- the Go binary reads and writes the same SQLite database file at `~/.config/uf/replicator/replicator.db`.
 
 ## Requirements *(mandatory)*
 
@@ -131,7 +131,7 @@ A maintainer runs a parity test suite that compares the replicator's MCP tool re
 - **FR-001**: All 11 hive MCP tools MUST be implemented with argument schemas and response shapes matching the TypeScript version.
 - **FR-002**: The `hive_create_epic` tool MUST support atomic creation of an epic with N subtasks in a single call.
 - **FR-003**: The `hive_ready` tool MUST return only unblocked cells (no open dependencies), sorted by priority.
-- **FR-004**: The `hive_sync` tool MUST serialize cell state and commit to the project's `.hive/` directory.
+- **FR-004**: The `hive_sync` tool MUST serialize cell state and commit to the project's `.uf/replicator/` directory.
 
 #### Swarm Mail (Phase 1)
 - **FR-005**: All 9 swarm mail MCP tools MUST be implemented with matching schemas and response shapes.
@@ -189,7 +189,7 @@ A maintainer runs a parity test suite that compares the replicator's MCP tool re
 ## Assumptions
 
 - Phase 0 (scaffold) is complete: MCP server, SQLite, tool registry, and 4 hive tools are working.
-- The database schema at `~/.config/swarm-tools/swarm.db` is the shared state between the Go and TypeScript versions during migration.
+- The database schema at `~/.config/uf/replicator/replicator.db` is the shared state between the Go and TypeScript versions during migration.
 - Dewey is the canonical memory backend; Ollama embedding operations are handled by Dewey, not by replicator.
 - The eval system (`swarm-evals`) remains in TypeScript and is NOT part of this rewrite.
 - The dashboard web UI (`swarm-dashboard`) remains in TypeScript and is NOT part of this rewrite.

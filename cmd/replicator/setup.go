@@ -23,7 +23,7 @@ func runSetup() error {
 		return fmt.Errorf("determine home directory: %w", err)
 	}
 
-	configDir := filepath.Join(home, ".config", "swarm-tools")
+	configDir := filepath.Join(home, ".config", "uf", "replicator")
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		return fmt.Errorf("create config directory: %w", err)
 	}

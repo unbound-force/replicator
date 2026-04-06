@@ -183,10 +183,10 @@ entangling log setup with the style refactoring.
 | # | Task | Files | FR | Test Strategy |
 |---|------|-------|----|---------------|
 | 4.1 | Create log setup in `cmd/replicator/serve.go`: configure `charmbracelet/log` with stderr + file multi-writer | `cmd/replicator/serve.go` | FR-007, FR-008 | Unit: verify log file creation + truncation |
-| 4.2 | Create `.unbound-force/` directory on serve startup (0o755) | `cmd/replicator/serve.go` | FR-007 | Unit: verify directory creation in `t.TempDir()` |
+| 4.2 | Create `.uf/replicator/` directory on serve startup (0o755) | `cmd/replicator/serve.go` | FR-007 | Unit: verify directory creation in `t.TempDir()` |
 | 4.3 | Handle log file creation failure: warn to stderr, continue without file | `cmd/replicator/serve.go` | FR-011 | Unit: read-only dir -> no crash, warning emitted |
 | 4.4 | Add tool call logging to `internal/mcp/server.go`: log tool name, duration, success/error | `internal/mcp/server.go` | FR-009 | Unit: mock logger, verify log entries per tool call |
-| 4.5 | Verify CLI commands do NOT create log file | `cmd/replicator/doctor.go` (no change) | FR-010 | Unit: run doctor, verify no `.unbound-force/replicator.log` |
+| 4.5 | Verify CLI commands do NOT create log file | `cmd/replicator/doctor.go` (no change) | FR-010 | Unit: run doctor, verify no `.uf/replicator/replicator.log` |
 | 4.6 | Test log truncation: restart serve, verify file contains only new session entries | — | FR-008 | Integration: write marker, restart, verify marker absent |
 
 **Phase Gate**: `go test ./...` passes. `replicator serve` creates log file. CLI commands do not.

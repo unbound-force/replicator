@@ -42,10 +42,10 @@ Download from [GitHub Releases](https://github.com/unbound-force/replicator/rele
 ## Usage
 
 ```bash
-# Per-repo setup (creates .hive/ directory)
+# Per-repo setup (creates .uf/replicator/ directory)
 replicator init
 
-# Per-machine setup (creates ~/.config/swarm-tools/ + SQLite DB)
+# Per-machine setup (creates ~/.config/uf/replicator/ + SQLite DB)
 replicator setup
 
 # Start MCP server (AI agents connect via stdio)
@@ -116,7 +116,7 @@ For Claude Code, add to `mcp_servers` in your config:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `REPLICATOR_DB` | `~/.config/swarm-tools/swarm.db` | SQLite database path |
+| `REPLICATOR_DB` | `~/.config/uf/replicator/replicator.db` | SQLite database path |
 | `DEWEY_MCP_URL` | `http://localhost:3333/mcp/` | Dewey semantic memory endpoint |
 | `ZEN_API_KEY` | *(none)* | OpenCode Zen gateway for LLM calls |
 

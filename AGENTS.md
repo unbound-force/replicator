@@ -23,8 +23,7 @@ All code changes follow Red-Green-Refactor:
 
 ### Database
 
-Single global database at `~/.config/swarm-tools/swarm.db`.
-Schema is compatible with cyborg-swarm's libSQL database.
+Single global database at `~/.config/uf/replicator/replicator.db`.
 Use in-memory databases for tests (`db.OpenMemory()`).
 
 ### MCP Protocol
@@ -228,8 +227,8 @@ make install  # Install to GOPATH/bin
 
 | Command | Purpose |
 |---------|---------|
-| `replicator init` | Per-repo setup: creates `.hive/` with empty `cells.json` |
-| `replicator setup` | Per-machine setup: creates `~/.config/swarm-tools/` + SQLite DB |
+| `replicator init` | Per-repo setup: creates `.uf/replicator/` with empty `cells.json` |
+| `replicator setup` | Per-machine setup: creates `~/.config/uf/replicator/` + SQLite DB |
 | `replicator serve` | Start MCP JSON-RPC server on stdio |
 | `replicator cells` | List hive cells (work items) |
 | `replicator doctor` | Check environment health |
@@ -271,7 +270,7 @@ originally by [Joel Hooks](https://github.com/joelhooks).
 
 ## Active Technologies
 - Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations) (001-go-rewrite-phases)
-- SQLite at `~/.config/swarm-tools/swarm.db` (WAL mode, compatible with cyborg-swarm) (001-go-rewrite-phases)
+- SQLite at `~/.config/uf/replicator/replicator.db` (WAL mode) (001-go-rewrite-phases)
 - Go 1.25+ + `charmbracelet/lipgloss v1.1.0`, `charmbracelet/log v1.0.0`, `muesli/termenv v0.16.0`, `charmbracelet/lipgloss/table` (sub-package of lipgloss) (002-charm-ux)
 - SQLite via `modernc.org/sqlite` (unchanged) (002-charm-ux)
 

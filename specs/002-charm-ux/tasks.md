@@ -94,17 +94,17 @@
 
 **Goal**: Add `charmbracelet/log` with per-repo log file for MCP server sessions.
 
-**Independent Test**: Start `replicator serve` → `.unbound-force/replicator.log` created with structured entries. CLI commands do not create log file.
+**Independent Test**: Start `replicator serve` → `.uf/replicator/replicator.log` created with structured entries. CLI commands do not create log file.
 
-- [x] T022 [US4] Update `cmd/replicator/serve.go`: on `serveMCP()` entry, create `.unbound-force/` directory with `os.MkdirAll(0o755)`, open `.unbound-force/replicator.log` with `os.Create` (truncate), configure `charmbracelet/log` with `io.MultiWriter(os.Stderr, logFile)` per FR-007, FR-008
+- [x] T022 [US4] Update `cmd/replicator/serve.go`: on `serveMCP()` entry, create `.uf/replicator/` directory with `os.MkdirAll(0o755)`, open `.uf/replicator/replicator.log` with `os.Create` (truncate), configure `charmbracelet/log` with `io.MultiWriter(os.Stderr, logFile)` per FR-007, FR-008
 - [x] T023 [US4] Handle log file creation failure in `cmd/replicator/serve.go`: if `os.Create` or `os.MkdirAll` fails, emit warning to stderr via `fmt.Fprintf(os.Stderr, ...)` and continue with stderr-only logger — do not crash per FR-011. Bootstrap exception to CS-008: `charmbracelet/log` cannot be used here because the logger itself is what failed to initialize. Add `defer logFile.Close()` for explicit cleanup.
 - [x] T024 [US4] Update `internal/mcp/server.go`: add `Logger` field to `Server` struct (interface or `*log.Logger`); update `NewServer` to accept logger; wrap `handleToolsCall` to log tool name, `time.Since(start)` duration, and success/error status per FR-009
 - [x] T025 [US4] Update `cmd/replicator/serve.go`: pass configured logger to `mcp.NewServer(reg, Version, logger)` per FR-009
-- [x] T026 [US4] Create `cmd/replicator/serve_test.go`: test that `serveMCP`-style setup in `t.TempDir()` creates `.unbound-force/replicator.log`; test truncation by writing marker, re-creating file, verifying marker absent per FR-007, FR-008
+- [x] T026 [US4] Create `cmd/replicator/serve_test.go`: test that `serveMCP`-style setup in `t.TempDir()` creates `.uf/replicator/replicator.log`; test truncation by writing marker, re-creating file, verifying marker absent per FR-007, FR-008
 - [x] T027 [US4] Add test in `cmd/replicator/serve_test.go`: test that log file creation failure (read-only directory) does not panic — logger falls back to stderr-only per FR-011
 - [x] T028 [US4] Add test in `internal/mcp/server_test.go`: test that `handleToolsCall` with a mock logger records tool name and duration for a successful call and an error call per FR-009
 
-**Checkpoint**: `go test ./... -count=1 -race` passes. `replicator serve` creates log file. CLI commands (doctor, cells, etc.) do not create `.unbound-force/replicator.log`.
+**Checkpoint**: `go test ./... -count=1 -race` passes. `replicator serve` creates log file. CLI commands (doctor, cells, etc.) do not create `.uf/replicator/replicator.log`.
 
 ---
 

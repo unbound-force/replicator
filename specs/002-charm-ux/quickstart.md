@@ -164,11 +164,11 @@ SERVER_PID=$!
 echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | ./replicator serve 2>/dev/null
 
 # Check log file
-cat .unbound-force/replicator.log
+cat .uf/replicator/replicator.log
 ```
 
 Expected:
-- `.unbound-force/` directory created
+- `.uf/replicator/` directory created
 - `replicator.log` contains structured entries
 - Each tool call logged with name + duration
 
@@ -176,14 +176,14 @@ Expected:
 
 ```bash
 # Add a marker to the log
-echo "MARKER_OLD_SESSION" >> .unbound-force/replicator.log
+echo "MARKER_OLD_SESSION" >> .uf/replicator/replicator.log
 
 # Restart serve
 ./replicator serve &
 # ... send a request ...
 
 # Verify marker is gone
-grep -c "MARKER_OLD_SESSION" .unbound-force/replicator.log
+grep -c "MARKER_OLD_SESSION" .uf/replicator/replicator.log
 ```
 
 Expected: 0 matches — log was truncated on startup.
@@ -191,9 +191,9 @@ Expected: 0 matches — log was truncated on startup.
 ### Step 16: CLI Commands Don't Create Log
 
 ```bash
-rm -f .unbound-force/replicator.log
+rm -f .uf/replicator/replicator.log
 ./replicator doctor
-ls .unbound-force/replicator.log 2>&1
+ls .uf/replicator/replicator.log 2>&1
 ```
 
 Expected: "No such file or directory" — CLI commands don't create log files.
@@ -222,4 +222,4 @@ Expected: Markdown output, no lipgloss styling (docs is excluded per spec).
 | MCP responses contain ANSI | Logger writing to stdout | Logger must use `os.Stderr` + file, never stdout |
 | `NO_COLOR` not respected | Old lipgloss version | Verify `go.sum` has lipgloss v1.1.0+ |
 | Table too wide for terminal | No width constraint | Use `table.Width(termenv.Width())` |
-| Log file not created | `.unbound-force/` doesn't exist | `os.MkdirAll` on serve startup |
+| Log file not created | `.uf/replicator/` doesn't exist | `os.MkdirAll` on serve startup |

@@ -140,7 +140,7 @@ func checkConfigDir() CheckResult {
 		}
 	}
 
-	configDir := home + "/.config/swarm-tools"
+	configDir := home + "/.config/uf/replicator"
 	info, err := os.Stat(configDir)
 	elapsed := time.Since(start)
 

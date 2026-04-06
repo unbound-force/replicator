@@ -156,7 +156,7 @@ specs/                Feature specifications
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `REPLICATOR_DB` | `~/.config/swarm-tools/swarm.db` | SQLite database path |
+| `REPLICATOR_DB` | `~/.config/uf/replicator/replicator.db` | SQLite database path |
 | `DEWEY_MCP_URL` | `http://localhost:3333/mcp/` | Dewey MCP endpoint |
 | `ZEN_API_KEY` | (none) | OpenCode Zen API key |
 

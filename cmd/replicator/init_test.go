@@ -12,13 +12,13 @@ func TestRunInit_FreshDirectory(t *testing.T) {
 		t.Fatalf("runInit: %v", err)
 	}
 
-	hiveDir := filepath.Join(dir, ".hive")
+	hiveDir := filepath.Join(dir, ".uf", "replicator")
 	info, err := os.Stat(hiveDir)
 	if err != nil {
-		t.Fatalf(".hive/ not created: %v", err)
+		t.Fatalf(".uf/replicator/ not created: %v", err)
 	}
 	if !info.IsDir() {
-		t.Fatal(".hive/ is not a directory")
+		t.Fatal(".uf/replicator/ is not a directory")
 	}
 
 	cellsPath := filepath.Join(hiveDir, "cells.json")
@@ -40,7 +40,7 @@ func TestRunInit_AlreadyInitialized(t *testing.T) {
 	}
 
 	// Write something to cells.json to verify it's not overwritten.
-	cellsPath := filepath.Join(dir, ".hive", "cells.json")
+	cellsPath := filepath.Join(dir, ".uf", "replicator", "cells.json")
 	os.WriteFile(cellsPath, []byte(`[{"id":"test"}]`), 0o644)
 
 	// Second init — should be idempotent.
@@ -64,7 +64,7 @@ func TestRunInit_CustomPath(t *testing.T) {
 		t.Fatalf("runInit with custom path: %v", err)
 	}
 
-	cellsPath := filepath.Join(target, ".hive", "cells.json")
+	cellsPath := filepath.Join(target, ".uf", "replicator", "cells.json")
 	if _, err := os.Stat(cellsPath); err != nil {
 		t.Fatalf("cells.json not created at custom path: %v", err)
 	}

@@ -1,7 +1,6 @@
 // Package config manages replicator configuration.
 //
-// The global database lives at ~/.config/swarm-tools/swarm.db
-// (shared with the TypeScript cyborg-swarm for migration compatibility).
+// The global database lives at ~/.config/uf/replicator/replicator.db.
 package config
 
 import (
@@ -33,11 +32,11 @@ func Load() *Config {
 func defaultDatabasePath() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "swarm.db"
+		return "replicator.db"
 	}
-	dir := filepath.Join(home, ".config", "swarm-tools")
+	dir := filepath.Join(home, ".config", "uf", "replicator")
 	_ = os.MkdirAll(dir, 0o755)
-	return filepath.Join(dir, "swarm.db")
+	return filepath.Join(dir, "replicator.db")
 }
 
 func envOr(key, fallback string) string {

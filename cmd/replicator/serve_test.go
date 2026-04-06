@@ -8,7 +8,7 @@ import (
 
 func TestSetupLogger_CreatesLogFile(t *testing.T) {
 	// Run setupLogger in a temp directory so it creates
-	// .unbound-force/replicator.log there.
+	// .uf/replicator/replicator.log there.
 	dir := t.TempDir()
 	orig, err := os.Getwd()
 	if err != nil {
@@ -27,7 +27,7 @@ func TestSetupLogger_CreatesLogFile(t *testing.T) {
 		t.Fatal("expected non-nil logger")
 	}
 
-	logPath := filepath.Join(dir, ".unbound-force", "replicator.log")
+	logPath := filepath.Join(dir, ".uf", "replicator", "replicator.log")
 	if _, err := os.Stat(logPath); err != nil {
 		t.Fatalf("log file not created: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestSetupLogger_Truncates(t *testing.T) {
 	t.Cleanup(func() { os.Chdir(orig) })
 
 	// First call: write a marker to the log file.
-	logDir := filepath.Join(dir, ".unbound-force")
+	logDir := filepath.Join(dir, ".uf", "replicator")
 	os.MkdirAll(logDir, 0o755)
 	logPath := filepath.Join(logDir, "replicator.log")
 	os.WriteFile(logPath, []byte("MARKER_SHOULD_BE_GONE"), 0o644)
@@ -74,8 +74,8 @@ func TestSetupLogger_ReadOnlyDir(t *testing.T) {
 		t.Fatalf("Getwd: %v", err)
 	}
 
-	// Create the .unbound-force dir as read-only so file creation fails.
-	logDir := filepath.Join(dir, ".unbound-force")
+	// Create the .uf/replicator dir as read-only so file creation fails.
+	logDir := filepath.Join(dir, ".uf", "replicator")
 	os.MkdirAll(logDir, 0o755)
 	os.Chmod(logDir, 0o444)
 	t.Cleanup(func() {

@@ -34,7 +34,7 @@
 - [x] T007 [P] [US1] Implement `StartCell` in `internal/hive/cells.go` — set `status='in_progress'`, update `updated_at`. Return error if cell not found.
 - [x] T008 [P] [US1] Implement `ReadyCell` in `internal/hive/cells.go` — query cells where `status='open'` and no parent cell has `status` in ('open', 'in_progress', 'blocked'). Order by `priority DESC`. Return first match (single cell, not a list).
 - [x] T009 [P] [US1] Add tests in `internal/hive/cells_test.go` — `TestStartCell_Success`, `TestStartCell_NotFound`, `TestReadyCell_UnblockedOnly` (create parent+child, verify only unblocked returned), `TestReadyCell_PriorityOrder`, `TestReadyCell_NoReady` (all blocked, returns nil).
-- [x] T010 [US1] Implement `Sync` in `internal/hive/sync.go` — serialize all cells to JSON, write to `.hive/cells.json` in project dir, shell out to `git add .hive/ && git commit -m "hive sync"` via `os/exec`. Accept `projectPath string` parameter.
+- [x] T010 [US1] Implement `Sync` in `internal/hive/sync.go` — serialize all cells to JSON, write to `.uf/replicator/cells.json` in project dir, shell out to `git add .uf/replicator/ && git commit -m "hive sync"` via `os/exec`. Accept `projectPath string` parameter.
 - [x] T011 [US1] Add tests in `internal/hive/sync_test.go` — `TestSync_WritesJSON` (use `t.TempDir()`, verify file contents), `TestSync_CommitsToGit` (init git repo in tempdir, run sync, verify commit exists via `git log`).
 - [x] T012 [US1] Implement `SessionStart` and `SessionEnd` in `internal/hive/session.go` — `SessionStart(store, agentName, activeCellID)` creates session row, returns previous session's handoff_notes. `SessionEnd(store, handoffNotes)` updates current session with ended_at and handoff_notes.
 - [x] T013 [US1] Add tests in `internal/hive/session_test.go` — `TestSessionStart_ReturnsHandoff` (create session with notes, start new, verify notes returned), `TestSessionStart_NoPrevious` (first session returns empty), `TestSessionEnd_SavesNotes`.
@@ -164,7 +164,7 @@
 
 ### 4A — Doctor Command (US5)
 
-- [x] T062 [P] [US5] Create `internal/doctor/checks.go` — define `CheckResult{Name, Status, Message, Duration}` and `Options{Writer io.Writer, Config *config.Config, GitChecker, DeweyChecker}` types. Implement `Run(opts Options) ([]CheckResult, error)`. Individual check functions: `checkGit()` (run `git --version`, verify exit 0), `checkDatabase()` (open and ping SQLite), `checkDewey()` (HTTP GET to health endpoint), `checkConfigDir()` (verify `~/.config/swarm-tools/` exists). Use interface injection for external checks.
+- [x] T062 [P] [US5] Create `internal/doctor/checks.go` — define `CheckResult{Name, Status, Message, Duration}` and `Options{Writer io.Writer, Config *config.Config, GitChecker, DeweyChecker}` types. Implement `Run(opts Options) ([]CheckResult, error)`. Individual check functions: `checkGit()` (run `git --version`, verify exit 0), `checkDatabase()` (open and ping SQLite), `checkDewey()` (HTTP GET to health endpoint), `checkConfigDir()` (verify `~/.config/uf/replicator/` exists). Use interface injection for external checks.
 - [x] T063 [P] [US5] Add tests in `internal/doctor/checks_test.go` — `TestDoctor_AllPass` (mock all checks passing, verify output contains ✓), `TestDoctor_DeweyDown` (mock Dewey failure, verify ✗ with message), `TestDoctor_GitMissing`, `TestDoctor_CompletesInTwoSeconds`. Use `bytes.Buffer` as writer.
 - [x] T064 [US5] Create `cmd/replicator/doctor.go` — implement `doctorCmd() *cobra.Command` and `runDoctor()` that creates `doctor.Options` and calls `doctor.Run()`. Format output as table to stdout.
 
@@ -182,7 +182,7 @@
 
 ### 4D — Setup Command (US5)
 
-- [x] T071 [US5] Create `cmd/replicator/setup.go` — implement `setupCmd() *cobra.Command` and `runSetup()`. Create config dir `~/.config/swarm-tools/` if not exists, initialize database, verify git is installed. Print status for each step.
+- [x] T071 [US5] Create `cmd/replicator/setup.go` — implement `setupCmd() *cobra.Command` and `runSetup()`. Create config dir `~/.config/uf/replicator/` if not exists, initialize database, verify git is installed. Print status for each step.
 
 ### 4E — Wire Up Phase 4 + Checkpoint
 
