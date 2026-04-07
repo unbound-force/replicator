@@ -10,6 +10,14 @@
         "."
       ],
       "enabled": true
+    },
+    "replicator": {
+      "type": "local",
+      "command": [
+        "replicator",
+        "serve"
+      ],
+      "enabled": true
     }
   }
 }
