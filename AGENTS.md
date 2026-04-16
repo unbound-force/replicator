@@ -5,6 +5,18 @@
 Replicator is the Go rewrite of cyborg-swarm. It provides multi-agent
 coordination tools via the MCP protocol and a CLI for observability.
 
+## Core Mission
+
+- **Strategic Architecture**: Engineers shift from manual
+  coding to directing an "infinite supply of junior
+  developers" (AI agents).
+- **Outcome Orientation**: Focus on conveying business
+  value and user intent rather than low-level technical
+  sub-tasks.
+- **Intent-to-Context**: Treat specs and rules as the
+  medium through which human intent is manifested into
+  code.
+
 ## Language & Toolchain
 
 - Go 1.25+
@@ -85,6 +97,87 @@ non-negotiable.
   verified via the Constitution Check gate at planning
   time, not ad-hoc review.
 
+### Gatekeeping Value Protection
+
+Agents MUST NOT modify values that serve as quality or
+governance gates to make an implementation pass. The
+following categories are protected:
+
+1. **Coverage thresholds and CRAP scores** — minimum
+   coverage percentages, CRAP score limits, coverage
+   ratchets
+2. **Severity definitions and auto-fix policies** —
+   CRITICAL/HIGH/MEDIUM/LOW boundaries, auto-fix
+   eligibility rules
+3. **Convention pack rule classifications** —
+   MUST/SHOULD/MAY designations on convention pack rules
+   (downgrading MUST to SHOULD is prohibited)
+4. **CI flags and linter configuration** — `-race`,
+   `-count=1`, `govulncheck`, `golangci-lint` rules,
+   pinned action SHAs
+5. **Agent temperature and tool-access settings** —
+   frontmatter `temperature`, `tools.write`, `tools.edit`,
+   `tools.bash` restrictions
+6. **Constitution MUST rules** — any MUST rule in
+   `.specify/memory/constitution.md` or hero constitutions
+7. **Review iteration limits and worker concurrency** —
+   max review iterations, max concurrent Swarm workers,
+   retry limits
+8. **Workflow gate markers** — `<!-- spec-review: passed
+   -->`, task completion checkboxes used as gates, phase
+   checkpoint requirements
+
+**What to do instead**: When an implementation cannot
+meet a gate, the agent MUST stop, report which gate is
+blocking and why, and let the human decide whether to
+adjust the gate or rework the implementation. Modifying
+a gate without explicit human authorization is a
+constitution violation (CRITICAL severity).
+
+### Workflow Phase Boundaries
+
+Agents MUST NOT cross workflow phase boundaries:
+
+- **Specify/Clarify/Plan/Tasks/Analyze/Checklist** phases:
+  spec artifacts ONLY (`specs/NNN-*/` directory). No
+  source code, test, agent, command, or config changes.
+- **Implement** phase: source code changes allowed,
+  guided by spec artifacts.
+- **Review** phase: findings and minor fixes only. No new
+  features.
+
+A phase boundary violation is treated as a process error.
+The agent MUST stop and report the violation rather than
+proceeding with out-of-phase changes.
+
+### Review Council as PR Prerequisite
+
+Before submitting a pull request, agents **must** run
+`/review-council` and resolve all REQUEST CHANGES
+findings until all reviewers return APPROVE. There must
+be **minimal to no code changes** between the council's
+APPROVE verdict and the PR submission — the council
+reviews the final code, not a draft that changes
+afterward.
+
+Workflow:
+
+1. Complete all implementation tasks
+2. Run CI checks locally (build, test, vet)
+3. Run `/review-council` — fix any findings, re-run
+   until APPROVE
+4. Commit, push, and submit PR immediately after council
+   APPROVE
+5. Do NOT make further code changes between APPROVE and
+   PR submission
+
+Exempt from council review:
+
+- Constitution amendments (governance documents, not code)
+- Documentation-only changes (README, AGENTS.md, spec
+  artifacts)
+- Emergency hotfixes (must be retroactively reviewed)
+
 ## Coding Conventions
 
 - **Formatting**: `gofmt` and `goimports` (enforced by
@@ -153,6 +246,42 @@ and `dewey_traverse` for keyword and structural queries.
 Grep tool, convention packs at
 `.opencode/unbound/packs/`.
 
+## Spec-First Development
+
+All changes that modify production code, test code, agent
+prompts, embedded assets, or CI configuration **must** be
+preceded by a spec workflow. The constitution
+(`.specify/memory/constitution.md`) is the highest-
+authority document in this project -- all work must align
+with it.
+
+**What requires a spec** (no exceptions without explicit
+user override):
+
+- New features or capabilities
+- Refactoring that changes function signatures, extracts
+  helpers, or moves code between packages
+- Test additions or assertion strengthening across
+  multiple functions
+- Agent prompt changes
+- CI workflow modifications
+- Data model changes (new struct fields, schema updates)
+
+**What is exempt** (may be done directly):
+
+- Constitution amendments (governed by the constitution's
+  own Governance section)
+- Typo corrections, comment-only changes, single-line
+  formatting fixes
+- Emergency hotfixes for critical production bugs (must
+  be retroactively documented)
+
+When an agent is unsure whether a change is trivial, it
+**must** ask the user rather than proceeding without a
+spec. The cost of an unnecessary spec is minutes; the
+cost of an unplanned change is rework, drift, and broken
+CI.
+
 ## Specification Framework
 
 This project uses a two-tier specification framework:
@@ -196,6 +325,36 @@ require updates to:
 - `AGENTS.md` -- conventions, packages, patterns
 - GoDoc comments -- exported functions and types
 - Spec artifacts under `specs/`
+
+### Website Documentation Gate
+
+When a change affects user-facing behavior, hero
+capabilities, CLI commands, or workflows, a GitHub issue
+**MUST** be created in the `unbound-force/website`
+repository to track required documentation or website
+updates. The issue must be created before the
+implementing PR is merged.
+
+```bash
+gh issue create --repo unbound-force/website \
+  --title "docs: <brief description of what changed>" \
+  --body "<what changed, why it matters, which pages
+          need updating>"
+```
+
+**Exempt changes** (no website issue needed):
+- Internal refactoring with no user-facing behavior
+  change
+- Test-only changes
+- CI/CD pipeline changes
+- Spec artifacts (specs are internal planning documents)
+
+**Examples requiring a website issue**:
+- New CLI command or flag added
+- Hero capabilities changed (new agent, removed feature)
+- Installation steps changed (`uf setup` flow)
+- New convention pack added
+- Breaking changes to any user-facing workflow
 
 ### Spec Commit Gate
 
