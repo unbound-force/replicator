@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+- adopt-org-infra-release-workflows: Replace inline release preflight
+  and GoReleaser jobs with org-infra reusable workflow callers
+  (`reusable_release_preflight` + `reusable_release_goreleaser` @ v0.7.1).
+  Adds smart re-run detection, semver-aware Python comparator (replaces
+  `sort -V`), configurable `ci_checks` input, and skip inputs for
+  debugging. GoReleaser config gains `release.extra_files` for Homebrew
+  cask upload. `sign-macos` stays inline.
+  (Part of unbound-force/unbound-force#428)
+
 ## [0.2.0] - 2026-04-06
 
 ### Added
