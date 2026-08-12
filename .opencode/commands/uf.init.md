@@ -5,7 +5,7 @@ description: >
   correct insertion points. Run after uf init, uf setup, or
   updating the OpenSpec CLI.
 ---
-<!-- scaffolded by uf vdev -->
+<!-- scaffolded by uf v0.15.0 -->
 
 # Command: /uf.init
 
@@ -742,7 +742,6 @@ After processing all customizations, display a summary:
 ### Legacy Directory Cleanup
   [status] [item]: [action]
   ...
-
 ### Summary
 Applied: N | Already present: N | Errors: N
 ```

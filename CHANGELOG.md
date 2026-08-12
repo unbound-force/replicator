@@ -7,15 +7,32 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- SECURITY.md with vulnerability reporting policy (GitHub Security
+  Advisories preferred, email fallback)
+- CODEOWNERS for governance file protection
+- Dependabot configuration for Go modules and GitHub Actions
+- `govulncheck` security scanning in CI pipeline (pinned to v1.5.0)
+- Per-package coverage ratchets in CI with 11 package thresholds
+- `make coverage` and `make check-coverage` Makefile targets
+- CI convention pack (`ci.md`) for workflow standards
+- Agentkit scaffold tests (`internal/agentkit/agentkit_test.go`)
+- CLAUDE.md for Claude Code integration
+
 ### Changed
-- adopt-org-infra-release-workflows: Replace inline release preflight
-  and GoReleaser jobs with org-infra reusable workflow callers
-  (`reusable_release_preflight` + `reusable_release_goreleaser` @ v0.7.1).
-  Adds smart re-run detection, semver-aware Python comparator (replaces
-  `sort -V`), configurable `ci_checks` input, and skip inputs for
-  debugging. GoReleaser config gains `release.extra_files` for Homebrew
-  cask upload. `sign-macos` stays inline.
+- Release pipeline now uses shared org-infra reusable workflows for
+  preflight validation and GoReleaser execution. Releases gain supply
+  chain artifacts (cosign signatures, SBOMs), smarter re-run resilience,
+  and semver ordering validation. GoReleaser config gains
+  `release.extra_files` for Homebrew cask upload. macOS code signing
+  and notarization stays inline.
   (Part of unbound-force/unbound-force#428)
+- Slash commands migrated to `uf.*` namespace (e.g., `/unleash` is
+  now `/uf.unleash`, `/cobalt-crush` is now `/uf.cobalt-crush`)
+
+### Security
+- Go bumped to 1.25.12 for crypto/tls vulnerability fix
+- `govulncheck` pinned to commit SHA for supply chain hygiene
 
 ## [0.2.0] - 2026-04-06
 

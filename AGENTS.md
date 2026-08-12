@@ -441,6 +441,7 @@ originally by [Joel Hooks](https://github.com/joelhooks).
 - Go 1.25+ + cobra (CLI), modernc.org/sqlite (pure Go SQLite), embed (stdlib) (003-rename-terminology)
 
 ## Recent Changes
+- 428-adopt-org-infra-release-workflows: Adopted org-infra reusable workflows for release pipeline, added govulncheck to CI, added per-package coverage ratchets, added CI convention pack, added SECURITY.md and CODEOWNERS, migrated commands to `uf.*` namespace
 - 001-go-rewrite-phases: Added Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations)
 
 ## Convention Packs
@@ -450,6 +451,11 @@ unbound-force. Agents MUST read the applicable pack(s)
 before writing or reviewing code.
 
 - `.opencode/uf/packs/default.md`
+- `.opencode/uf/packs/default-custom.md`
 - `.opencode/uf/packs/severity.md`
 - `.opencode/uf/packs/content.md`
+- `.opencode/uf/packs/content-custom.md`
+- `.opencode/uf/packs/ci.md`
+- `.opencode/uf/packs/ci-custom.md`
 - `.opencode/uf/packs/go.md`
+- `.opencode/uf/packs/go-custom.md`

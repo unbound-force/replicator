@@ -1,3 +1,10 @@
+# CI
+# --
+# Continuous integration pipeline. Runs on push to main and
+# pull requests. Validates code quality (vet, govulncheck),
+# runs tests with race detection, enforces per-package
+# coverage ratchets, and verifies the binary builds.
+
 name: CI
 
 on:

@@ -45,6 +45,7 @@ jobs:
     uses: complytime/org-infra/.github/workflows/reusable_release_preflight.yml@0c784711926c9864f027ec565fd7c06a382d80f8 # v0.7.1
     with:
       tag: ${{ inputs.tag }}
+      allow_prerelease: true
       ci_checks: '["Build and Test"]'
       skip_semver_check: ${{ inputs.skip_semver_check }}
       skip_ci_checks: ${{ inputs.skip_ci_checks }}
@@ -86,6 +87,7 @@ jobs:
           MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
 
   sign-macos:
+    name: Sign macOS
     runs-on: macos-latest
     needs: [preflight, release, check-signing-secrets]
     if: needs.check-signing-secrets.outputs.has_signing_secrets == 'true'
@@ -215,6 +217,11 @@ jobs:
           ' "$CASK_FILE" > "${CASK_FILE}.patched"
           mv "${CASK_FILE}.patched" "$CASK_FILE"
 
+          if ! grep -q "$ARM64_SHA" "$CASK_FILE"; then
+            echo "::error::SHA patching failed — new SHA not found in cask file"
+            exit 1
+          fi
+
           git clone "https://x-access-token:${HOMEBREW_TAP_GITHUB_TOKEN}@github.com/unbound-force/homebrew-tap.git" tap
           cp "$CASK_FILE" tap/Casks/replicator.rb
 
@@ -228,3 +235,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Cleanup signing materials
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/cert.p12" "$RUNNER_TEMP/notary_key.p8"

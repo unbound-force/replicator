@@ -81,9 +81,13 @@ func TestScaffold_SkipsExisting(t *testing.T) {
 
 	// Pre-create a file that Scaffold would write.
 	forgePath := filepath.Join(dir, ".opencode", "commands", "forge.md")
-	os.MkdirAll(filepath.Dir(forgePath), 0o755)
+	if err := os.MkdirAll(filepath.Dir(forgePath), 0o755); err != nil {
+		t.Fatalf("setup MkdirAll: %v", err)
+	}
 	original := []byte("# custom content\n")
-	os.WriteFile(forgePath, original, 0o644)
+	if err := os.WriteFile(forgePath, original, 0o644); err != nil {
+		t.Fatalf("setup WriteFile: %v", err)
+	}
 
 	results, err := Scaffold(dir, false)
 	if err != nil {
@@ -105,7 +109,10 @@ func TestScaffold_SkipsExisting(t *testing.T) {
 	}
 
 	// Verify file content was NOT overwritten.
-	data, _ := os.ReadFile(forgePath)
+	data, err := os.ReadFile(forgePath)
+	if err != nil {
+		t.Fatalf("read forge.md after scaffold: %v", err)
+	}
 	if string(data) != string(original) {
 		t.Errorf("forge.md was overwritten: got %q", string(data))
 	}
@@ -116,9 +123,13 @@ func TestScaffold_ForceOverwrites(t *testing.T) {
 
 	// Pre-create a file that Scaffold would write.
 	forgePath := filepath.Join(dir, ".opencode", "commands", "forge.md")
-	os.MkdirAll(filepath.Dir(forgePath), 0o755)
+	if err := os.MkdirAll(filepath.Dir(forgePath), 0o755); err != nil {
+		t.Fatalf("setup MkdirAll: %v", err)
+	}
 	original := []byte("# custom content\n")
-	os.WriteFile(forgePath, original, 0o644)
+	if err := os.WriteFile(forgePath, original, 0o644); err != nil {
+		t.Fatalf("setup WriteFile: %v", err)
+	}
 
 	results, err := Scaffold(dir, true)
 	if err != nil {
@@ -134,10 +145,17 @@ func TestScaffold_ForceOverwrites(t *testing.T) {
 		}
 	}
 
-	// Verify file content WAS overwritten with embedded content.
-	data, _ := os.ReadFile(forgePath)
-	if string(data) == string(original) {
-		t.Error("forge.md was NOT overwritten despite force=true")
+	// Verify file content WAS overwritten with expected embedded content.
+	data, err := os.ReadFile(forgePath)
+	if err != nil {
+		t.Fatalf("read forge.md after force scaffold: %v", err)
+	}
+	expected, err := content.ReadFile("content/commands/forge.md")
+	if err != nil {
+		t.Fatalf("read embedded forge.md: %v", err)
+	}
+	if string(data) != string(expected) {
+		t.Errorf("forge.md content after force overwrite doesn't match embedded content:\n  got length %d, want length %d", len(data), len(expected))
 	}
 }
 
