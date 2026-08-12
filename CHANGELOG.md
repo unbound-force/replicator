@@ -11,13 +11,20 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - SECURITY.md with vulnerability reporting policy (GitHub Security
   Advisories preferred, email fallback)
 - CODEOWNERS for governance file protection
-- Dependabot configuration for Go modules and GitHub Actions
+- Dependabot configuration for automated weekly dependency update PRs
+  for Go modules and GitHub Actions
 - `govulncheck` security scanning in CI pipeline (pinned to v1.5.0)
 - Per-package coverage ratchets in CI with 11 package thresholds
-- `make coverage` and `make check-coverage` Makefile targets
+- `make coverage` and `make check-coverage` Makefile targets for
+  local coverage enforcement before pushing
 - CI convention pack (`ci.md`) for workflow standards
-- Agentkit scaffold tests (`internal/agentkit/agentkit_test.go`)
-- CLAUDE.md for Claude Code integration
+- CLAUDE.md for automatic convention pack loading in Claude Code
+- New agentkit slash commands scaffolded by `replicator init`:
+  `/forge`, `/forge:status`, `/org`, `/inbox`, `/handoff`
+- New agentkit agents: `coordinator`, `worker`, `background-worker`
+- New agentkit skills: `always-on-guidance`, `forge-coordination`,
+  `forge-global`, `learning-systems`, `replicator-cli`,
+  `system-design`, `testing-patterns`
 
 ### Changed
 - Release pipeline now uses shared org-infra reusable workflows for
@@ -32,7 +39,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Security
 - Go bumped to 1.25.12 for crypto/tls vulnerability fix
-- `govulncheck` pinned to commit SHA for supply chain hygiene
+- All CI actions and reusable workflows pinned to commit SHAs for
+  supply chain integrity (`actions/checkout`, `actions/setup-go`,
+  `complytime/org-infra`, `govulncheck`)
 
 ## [0.2.0] - 2026-04-06
 

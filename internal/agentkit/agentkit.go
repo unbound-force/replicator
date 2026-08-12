@@ -6,6 +6,7 @@ package agentkit
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -46,6 +47,8 @@ func Scaffold(targetDir string, force bool) ([]ScaffoldResult, error) {
 				return nil
 			}
 			results = append(results, ScaffoldResult{Path: relPath, Action: "overwritten"})
+		} else if !errors.Is(statErr, os.ErrNotExist) {
+			return fmt.Errorf("stat %s: %w", relPath, statErr)
 		} else {
 			results = append(results, ScaffoldResult{Path: relPath, Action: "created"})
 		}
@@ -61,7 +64,10 @@ func Scaffold(targetDir string, force bool) ([]ScaffoldResult, error) {
 			return fmt.Errorf("read embedded %s: %w", path, readErr)
 		}
 
-		return os.WriteFile(destPath, data, 0o644)
+		if writeErr := os.WriteFile(destPath, data, 0o644); writeErr != nil {
+			return fmt.Errorf("write %s: %w", relPath, writeErr)
+		}
+		return nil
 	})
 
 	return results, err

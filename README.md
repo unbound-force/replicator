@@ -172,13 +172,15 @@ docs/                 Generated tool reference
 ## Development
 
 ```bash
-make build    # Build binary to bin/replicator
-make test     # Run all tests
-make vet      # Go vet
-make check    # Vet + test
-make serve    # Build and run MCP server
-make release  # GoReleaser dry-run (local)
-make install  # Install to GOPATH/bin
+make build          # Build binary to bin/replicator
+make test           # Run all tests
+make vet            # Go vet
+make check          # Vet + test
+make coverage       # Run tests with race detection and print coverage
+make check-coverage # Enforce per-package coverage ratchets locally
+make serve          # Build and run MCP server
+make release        # GoReleaser dry-run (local)
+make install        # Install to GOPATH/bin
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and PR workflow.

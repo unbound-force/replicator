@@ -17,10 +17,12 @@ make check   # builds, vets, and runs all tests
 ## Building and Testing
 
 ```bash
-make build    # Build binary to bin/replicator
-make test     # Run all tests
-make vet      # Run go vet
-make check    # Vet + test (use this before submitting PRs)
+make build          # Build binary to bin/replicator
+make test           # Run all tests
+make vet            # Run go vet
+make check          # Vet + test (use this before submitting PRs)
+make coverage       # Run tests with race detection and print coverage
+make check-coverage # Enforce per-package coverage ratchets locally
 ```
 
 ## Testing Conventions
