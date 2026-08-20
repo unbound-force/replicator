@@ -7,6 +7,13 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Fixed
+- Homebrew cask SHA-256 mismatch after macOS code signing replaces release
+  archive. Extracted cask publishing from `sign-macos` into a dedicated
+  `publish-cask` job that computes the SHA from the final release artifact,
+  eliminating the TOCTOU gap between signing and cask publication.
+  (Fixes [#81](https://github.com/unbound-force/replicator/issues/81))
+
 ### Added
 - SECURITY.md with vulnerability reporting policy (GitHub Security
   Advisories preferred, email fallback)
