@@ -264,13 +264,23 @@ jobs:
             exit 1
           fi
 
+          # The cask puts each stanza's `sha256` line *before* its `url`
+          # line, so the darwin_arm64 marker is only seen after its own
+          # sha256 line has already gone by. Track the most recently seen
+          # sha256 line number and patch *that* one when the marker hits,
+          # instead of scanning forward into the next stanza's sha256.
           awk -v arm64="$ARM64_SHA" '
-            /darwin_arm64/ { found_arm64=1 }
-            /sha256/ && found_arm64 {
-              sub(/sha256 "[^"]*"/, "sha256 \"" arm64 "\"")
-              found_arm64=0
+            { lines[NR] = $0 }
+            /sha256/ { sha_line = NR }
+            /darwin_arm64/ { darwin_sha_line = sha_line }
+            END {
+              for (i = 1; i <= NR; i++) {
+                if (i == darwin_sha_line) {
+                  sub(/sha256 "[^"]*"/, "sha256 \"" arm64 "\"", lines[i])
+                }
+                print lines[i]
+              }
             }
-            { print }
           ' "$CASK_FILE" > "${CASK_FILE}.patched"
           mv "${CASK_FILE}.patched" "$CASK_FILE"
 
