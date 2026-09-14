@@ -95,7 +95,9 @@ non-negotiable.
   `Standardized CI / Run linters` check runs MegaLinter
   (via `complytime/org-infra` reusable workflow) with
   linters configured in `.mega-linter.yml` and PR title
-  validation.
+  validation. Note: MegaLinter runs in CI only; there is
+  no local equivalent. Use `mega-linter-runner` if local
+  linting is needed (requires Docker).
 - **Intent Drift Detection**: Implementation must faithfully
   capture the spec's intent. The parity test suite verifies
   response shapes match the TypeScript version.
