@@ -6,7 +6,7 @@ description: >
   Without arguments: detects active workflow and runs /speckit.implement
   or /opsx-apply.
 ---
-<!-- scaffolded by gaze dev -->
+<!-- scaffolded by gaze v1.8.0-rc.1 -->
 
 <protect>
 # Command: /gaze fix

@@ -1,7 +1,7 @@
 ---
 description: Perform a read-only testability analysis of spec artifacts by delegating to the reviewer-testing agent in Spec Review Mode.
 ---
-<!-- scaffolded by gaze dev -->
+<!-- scaffolded by gaze v1.8.0-rc.1 -->
 
 <protect>
 ## User Input

@@ -1,7 +1,7 @@
 ---
 description: "Triage and address PR review feedback with structured assessment"
 ---
-<!-- scaffolded by uf vdev -->
+<!-- scaffolded by uf v0.17.0 -->
 
 
 # Address Feedback
@@ -332,6 +332,51 @@ before execution proceeds.
 ---
 
 ## Phase 4: Execute
+
+>>> MANDATORY GATE: HUMAN CONFIRMATION REQUIRED <<<
+
+**Session-resume guard**: If this session was resumed
+from compressed context, or if you cannot verify that
+the human explicitly confirmed the Phase 4 execution
+plan in the current uncompressed conversation history,
+you MUST re-present the execution summary below and
+obtain fresh confirmation via the **question tool**
+before proceeding. Do NOT rely on confirmation recorded
+in compressed context. When in doubt, re-confirm —
+false re-confirmation is harmless; executing mutations
+without consent is a violation.
+
+Present the execution summary to the user:
+
+> **Phase 4 Execution Plan:**
+>
+> - Code changes: N files to modify (ACCEPT: N, MODIFY: N)
+> - Commits: grouped by scope
+> - Push: to remote after review-council passes
+> - Reply comments: N comments to post on PR
+> - Thread resolutions: N threads to resolve
+>
+> This will execute all queued actions from Phase 3
+> triage. Individual sub-steps (4.4 push, 4.5 reply
+> comments) have their own confirmation prompts.
+
+Use the **question tool** with options
+`["Proceed with Phase 4 execution",
+"Review plan again", "Abort -- stop here"]`.
+
+- **"Proceed with Phase 4 execution"**: Continue to
+  sub-step 4.1.
+- **"Review plan again"**: Re-display the Phase 3
+  triage summary and allow decision changes.
+- **"Abort -- stop here"**: Stop execution. Report
+  that no mutations were performed.
+
+**CRITICAL RULE**: NEVER begin Phase 4 execution
+(code changes, commits, push, reply comments, or
+thread resolutions) without explicit human
+confirmation via the **question tool**.
+
+>>> END MANDATORY GATE <<<
 
 Implement all queued actions as a batch.
 
