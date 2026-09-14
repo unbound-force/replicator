@@ -1,7 +1,7 @@
 ---
 description: "Review PR #$ARGUMENTS — alignment, security, and constitution compliance"
 ---
-<!-- scaffolded by uf vdev -->
+<!-- scaffolded by uf v0.17.0 -->
 
 # Review Pull Request
 
@@ -800,6 +800,57 @@ Use the **question tool** with options
    Branch naming: `fix/pr-<PR_NUMBER>-<sanitized-check-name>` (e.g., `fix/pr-42-yamllint`, `fix/pr-42-test-auth-timeout`)
 
 5. **Analyze and propose the fix**: Use the CI failure output and the failing file(s) to determine the minimal change needed. Keep the scope as small as possible — fix only what is failing.
+
+   >>> MANDATORY GATE: HUMAN CONFIRMATION REQUIRED <<<
+
+   **Session-resume guard**: If this session was resumed
+   from compressed context, or if you cannot verify that
+   the human explicitly confirmed the fix-branch commit
+   in the current uncompressed conversation history,
+   you MUST re-present the commit preview below and
+   obtain fresh confirmation via the **question tool**
+   before committing. Do NOT rely on confirmation
+   recorded in compressed context. When in doubt,
+   re-confirm — false re-confirmation is harmless;
+   committing without consent is a violation.
+
+   Before committing, show the user:
+
+   > **Fix-branch commit preview:**
+   >
+   > ```
+   > git diff --cached --stat
+   > ```
+   >
+   > **Proposed commit message:**
+   > ```
+   > fix: resolve <failing-check> CI failure
+   >
+   > <Brief description>
+   >
+   > This failure was pre-existing on <BASE_BRANCH>
+   > and unrelated to PR #<PR_NUMBER>.
+   >
+   > Assisted-by: <model>
+   > ```
+
+   Use the **question tool** with options
+   `["Commit -- apply fix",
+   "Edit commit message", "Abort -- discard changes"]`.
+
+   - **"Commit -- apply fix"**: Proceed with the commit
+     using the displayed message.
+   - **"Edit commit message"**: Let the user modify the
+     commit message, then re-confirm.
+   - **"Abort -- discard changes"**: Discard staged
+     changes and skip the fix branch. Switch back to
+     the PR branch.
+
+   **CRITICAL RULE**: NEVER commit on a fix branch
+   without explicit human confirmation via the
+   **question tool**.
+
+   >>> END MANDATORY GATE <<<
 
 6. **Commit with Conventional Commits format**:
    Write the commit message to a temporary file to avoid
