@@ -91,7 +91,13 @@ non-negotiable.
   `.github/workflows/` for the exact commands -- do not
   rely on memory. Any failure blocks the task. The CI
   `Build and Test` check includes `govulncheck` for
-  vulnerability scanning of Go dependencies.
+  vulnerability scanning of Go dependencies. The
+  `Standardized CI / Run linters` check runs MegaLinter
+  (via `complytime/org-infra` reusable workflow) with
+  linters configured in `.mega-linter.yml` and PR title
+  validation. Note: MegaLinter runs in CI only; there is
+  no local equivalent. Use `mega-linter-runner` if local
+  linting is needed (requires Docker).
 - **Intent Drift Detection**: Implementation must faithfully
   capture the spec's intent. The parity test suite verifies
   response shapes match the TypeScript version.
@@ -441,6 +447,7 @@ originally by [Joel Hooks](https://github.com/joelhooks).
 - Go 1.25+ + cobra (CLI), modernc.org/sqlite (pure Go SQLite), embed (stdlib) (003-rename-terminology)
 
 ## Recent Changes
+- adopt-org-infra-ci: Added MegaLinter CI workflow via `complytime/org-infra` reusable workflow, added `.mega-linter.yml` config, added `Standardized CI / Run linters` to branch protection and release preflight gating
 - 428-adopt-org-infra-release-workflows: Adopted org-infra reusable workflows for release pipeline, added govulncheck to CI, added per-package coverage ratchets, added CI convention pack, added SECURITY.md and CODEOWNERS, migrated commands to `uf.*` namespace
 - 001-go-rewrite-phases: Added Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations)
 
