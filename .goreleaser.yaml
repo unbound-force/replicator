@@ -57,12 +57,13 @@ homebrew_casks:
     homepage: "https://github.com/unbound-force/replicator"
     directory: Casks
     skip_upload: true
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/replicator"]
-          end
+    custom_block: |
+      postflight_steps do
+        on_macos do
+          run "/usr/bin/xattr",
+            args: ["-dr", "com.apple.quarantine", "{{ "{{staged_path}}" }}/replicator"]
+        end
+      end
     repository:
       owner: unbound-force
       name: homebrew-tap
