@@ -54,6 +54,8 @@ assert_success
 sed "7c\\      sha256 \"$ARCHIVE_SHA\"" "$FIXTURE" > "$CASE_DIR/expected.rb"
 cmp -s "$CASE_DIR/expected.rb" "$CASE_DIR/replicator.rb" || \
   fail "happy: patched cask differs from exact expected fixture"
+grep -q '#{staged_path}' "$CASE_DIR/replicator.rb" || \
+  fail "happy: cask uses {{staged_path}} instead of Ruby interpolation #{staged_path}"
 
 new_case stray-comment
 printf '\n# note: darwin_arm64 builds are notarized\n' >> "$CASE_DIR/replicator.rb"

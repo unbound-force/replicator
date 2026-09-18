@@ -32,7 +32,7 @@ cask "replicator" do
 
   postflight_steps do
     on_macos do
-      run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{staged_path}}/replicator"]
+      run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/replicator"]
     end
   end
 
