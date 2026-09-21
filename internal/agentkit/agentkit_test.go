@@ -931,7 +931,7 @@ func TestAlwaysOnGuidance_StructuralHardening(t *testing.T) {
 
 	// (1) Critical Safety section removed in v0.17.0 (content merged into main body).
 	if strings.Contains(text, "## Critical Safety") {
-		t.Error("always-on-guidance: '## Critical Safety' section should be removed (v0.17.0)")
+		t.Error("always-on-guidance: '## Critical Safety' section should be removed")
 	}
 
 	// (2) Tool Usage Discipline section exists.
@@ -968,27 +968,27 @@ func TestAlwaysOnGuidance_StructuralHardening(t *testing.T) {
 	// (5) Code Quality sub-headers flattened in v0.17.0 (no ### headers).
 	for _, sub := range []string{"### Structure", "### Clarity"} {
 		if strings.Contains(text, sub) {
-			t.Errorf("always-on-guidance: Code Quality sub-header %q should be flattened (v0.17.0)", sub)
+			t.Errorf("always-on-guidance: Code Quality sub-header %q should be flattened", sub)
 		}
 	}
 
 	// (6) Testing sub-headers flattened in v0.17.0.
 	for _, sub := range []string{"### Test Infrastructure", "### Test Practice"} {
 		if strings.Contains(text, sub) {
-			t.Errorf("always-on-guidance: Testing sub-header %q should be flattened (v0.17.0)", sub)
+			t.Errorf("always-on-guidance: Testing sub-header %q should be flattened", sub)
 		}
 	}
 
 	// (7) Error Handling sub-headers flattened in v0.17.0.
 	for _, sub := range []string{"### Error Propagation", "### Error Coverage"} {
 		if strings.Contains(text, sub) {
-			t.Errorf("always-on-guidance: Error Handling sub-header %q should be flattened (v0.17.0)", sub)
+			t.Errorf("always-on-guidance: Error Handling sub-header %q should be flattened", sub)
 		}
 	}
 
 	// (8) Force push rule uses lowercase "Never" (v0.17.0 keyword casing update).
 	if !strings.Contains(text, "Never force push") {
-		t.Error("always-on-guidance: force push rule should use 'Never' (v0.17.0 casing)")
+		t.Error("always-on-guidance: force push rule should use 'Never'")
 	}
 }
 
