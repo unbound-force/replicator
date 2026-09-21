@@ -419,6 +419,7 @@ internal/
   query/              Preset SQL queries
   mcp/                MCP JSON-RPC server + structured logging
   ui/                 Centralized lipgloss styles + table helpers
+  workflowtest/       Workflow policy regression tests
   tools/
     registry/         Tool registration framework
     org/              Org tool handlers (11 tools)
