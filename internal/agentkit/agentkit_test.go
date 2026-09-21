@@ -929,25 +929,18 @@ func TestAlwaysOnGuidance_StructuralHardening(t *testing.T) {
 	}
 	text := string(data)
 
-	// (1) Critical Safety section exists and appears before Tool Usage Discipline.
-	safetyIdx := strings.Index(text, "## Critical Safety")
-	if safetyIdx < 0 {
-		t.Error("always-on-guidance: missing '## Critical Safety' section")
+	// (1) Critical Safety section removed in v0.17.0 (content merged into main body).
+	if strings.Contains(text, "## Critical Safety") {
+		t.Error("always-on-guidance: '## Critical Safety' section should be removed (v0.17.0)")
 	}
+
+	// (2) Tool Usage Discipline section exists.
 	toolUsageIdx := strings.Index(text, "## Tool Usage Discipline")
 	if toolUsageIdx < 0 {
 		t.Error("always-on-guidance: missing '## Tool Usage Discipline' section")
 	}
-	if safetyIdx >= 0 && toolUsageIdx >= 0 && safetyIdx >= toolUsageIdx {
-		t.Error("always-on-guidance: '## Critical Safety' must appear before '## Tool Usage Discipline'")
-	}
 
-	// (2) Force push rule uses RFC 2119 uppercase keyword (DR-002).
-	if !strings.Contains(text, "NEVER force push") {
-		t.Error("always-on-guidance: force push rule must use RFC 2119 keyword 'NEVER'")
-	}
-
-	// (3) hivemind_find is the first item in Tool Usage Discipline section.
+	// (3) First item in Tool Usage Discipline is "Read files before editing" (v0.17.0 reorder).
 	if toolUsageIdx >= 0 {
 		afterToolUsage := text[toolUsageIdx:]
 		firstDashIdx := strings.Index(afterToolUsage, "\n- ")
@@ -961,31 +954,41 @@ func TestAlwaysOnGuidance_StructuralHardening(t *testing.T) {
 				firstItemEnd = len(afterToolUsage) - firstItemStart
 			}
 			firstItem := afterToolUsage[firstItemStart : firstItemStart+firstItemEnd]
-			if !strings.Contains(firstItem, "hivemind_find") {
-				t.Errorf("always-on-guidance: first Tool Usage item should mention hivemind_find, got %q", firstItem)
+			if !strings.Contains(firstItem, "Read files before editing") {
+				t.Errorf("always-on-guidance: first Tool Usage item should mention 'Read files before editing', got %q", firstItem)
 			}
 		}
 	}
 
-	// (4) Code Quality split into sub-headers.
+	// (4) dewey_semantic_search is referenced in Tool Usage Discipline.
+	if !strings.Contains(text, "dewey_semantic_search") {
+		t.Error("always-on-guidance: Tool Usage Discipline should reference dewey_semantic_search")
+	}
+
+	// (5) Code Quality sub-headers flattened in v0.17.0 (no ### headers).
 	for _, sub := range []string{"### Structure", "### Clarity"} {
-		if !strings.Contains(text, sub) {
-			t.Errorf("always-on-guidance: missing Code Quality sub-header %q", sub)
+		if strings.Contains(text, sub) {
+			t.Errorf("always-on-guidance: Code Quality sub-header %q should be flattened (v0.17.0)", sub)
 		}
 	}
 
-	// (5) Testing split into sub-headers.
+	// (6) Testing sub-headers flattened in v0.17.0.
 	for _, sub := range []string{"### Test Infrastructure", "### Test Practice"} {
-		if !strings.Contains(text, sub) {
-			t.Errorf("always-on-guidance: missing Testing sub-header %q", sub)
+		if strings.Contains(text, sub) {
+			t.Errorf("always-on-guidance: Testing sub-header %q should be flattened (v0.17.0)", sub)
 		}
 	}
 
-	// (6) Error Handling split into sub-headers.
+	// (7) Error Handling sub-headers flattened in v0.17.0.
 	for _, sub := range []string{"### Error Propagation", "### Error Coverage"} {
-		if !strings.Contains(text, sub) {
-			t.Errorf("always-on-guidance: missing Error Handling sub-header %q", sub)
+		if strings.Contains(text, sub) {
+			t.Errorf("always-on-guidance: Error Handling sub-header %q should be flattened (v0.17.0)", sub)
 		}
+	}
+
+	// (8) Force push rule uses lowercase "Never" (v0.17.0 keyword casing update).
+	if !strings.Contains(text, "Never force push") {
+		t.Error("always-on-guidance: force push rule should use 'Never' (v0.17.0 casing)")
 	}
 }
 

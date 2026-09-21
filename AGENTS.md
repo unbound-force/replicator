@@ -246,7 +246,7 @@ and `dewey_traverse` for keyword and structural queries.
 
 **Tier 1 (No Dewey)**: Direct file operations -- Read tool,
 Grep tool, convention packs at
-`.opencode/unbound/packs/`.
+`.opencode/uf/packs/`.
 
 ## Spec-First Development
 
