@@ -19,7 +19,7 @@ Before writing code, read the following in order:
 1. **`AGENTS.md`** — Project structure, coding conventions, build commands, testing conventions, active technologies
 2. **`.specify/memory/constitution.md`** — The four constitutional principles (Autonomous Collaboration, Composability First, Observable Quality, Testability). All code must align.
 3. **Active spec and plan** — Check `specs/` for the current feature branch's `spec.md`, `plan.md`, and `tasks.md`. Read the user story acceptance criteria you are implementing.
-4. **Convention packs** — Read all `*.md` files from `.opencode/unbound/packs/` to load the active coding conventions. If no pack files are found, note this in your output and apply universal principles only.
+4. **Convention packs** — Read all `*.md` files from `.opencode/uf/packs/` to load the active coding conventions. If no pack files are found, note this in your output and apply universal principles only.
 5. **Feedback artifacts** — Check `.unbound-force/artifacts/` for Gaze quality reports and Divisor review verdicts from previous cycles. Read these to learn from past feedback.
 6. **Knowledge graph** (optional) — If Dewey MCP tools are available (`dewey_search`, `dewey_get_page`, etc.), use them to search for related specs, past review patterns, and architectural decisions. If MCP tools are unavailable, rely on reading project files directly.
 
@@ -46,7 +46,7 @@ When making non-trivial design choices:
 
 ### 1. Convention Pack Adherence [PACK]
 
-Before writing code, load the active convention pack from `.opencode/unbound/packs/`. Apply all rules tagged with `[MUST]` as mandatory requirements. Apply `[SHOULD]` rules as strong recommendations. Apply `[MAY]` rules as optional improvements.
+Before writing code, load the active convention pack from `.opencode/uf/packs/`. Apply all rules tagged with `[MUST]` as mandatory requirements. Apply `[SHOULD]` rules as strong recommendations. Apply `[MAY]` rules as optional improvements.
 
 Key areas from convention packs:
 - **Coding Style** (CS-NNN): Formatting, naming, import organization, error handling

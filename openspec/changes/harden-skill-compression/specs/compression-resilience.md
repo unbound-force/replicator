@@ -1,3 +1,9 @@
+> **Superseded:** The always-on-guidance requirements in this spec
+> (Critical Safety section, hivemind_find first position, sub-header
+> splits) were reversed by PR #114 / Issue #113, which syncs
+> always-on-guidance with the v0.17.0 scaffold structure. The
+> forge-global requirements remain current.
+
 ## ADDED Requirements
 
 ### Requirement: Critical Safety Section in always-on-guidance
