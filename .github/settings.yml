@@ -17,6 +17,7 @@ branches:
         strict: true
         contexts:
           - "Build and Test"
+          - "Standardized CI / Run linters"
       enforce_admins: false
       required_linear_history: false
       restrictions: null
