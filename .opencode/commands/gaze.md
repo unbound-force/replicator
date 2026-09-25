@@ -5,7 +5,7 @@ description: >
   metrics only). Delegates to the gaze-reporter agent.
 agent: gaze-reporter
 ---
-<!-- scaffolded by gaze dev -->
+<!-- scaffolded by gaze v1.8.0-rc.1 -->
 
 <protect>
 # Command: /gaze
