@@ -57,6 +57,8 @@ homebrew_casks:
     homepage: "https://github.com/unbound-force/replicator"
     directory: Casks
     skip_upload: true
+    # custom_block: native postflight_steps not yet supported by GoReleaser DSL;
+    # migrate when available (tracking: goreleaser/goreleaser#6873)
     custom_block: |
       postflight_steps do
         on_macos do
