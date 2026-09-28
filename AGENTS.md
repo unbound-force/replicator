@@ -490,14 +490,18 @@ parity for `always-on-guidance` and `forge-global`
 skills. `TestForgeCoordinationSkill_StructuralHardening`
 checks `forge-coordination` inline. See issue #70 for
 planned expansion of drift detection coverage to all 15
-mirrored files.
+mirrored files. If these test names or their coverage
+scope change, update this section to match.
 
 ### When Reviewing or Implementing
 
 When a PR modifies a file in either column of the tables
 above, verify the corresponding copy is updated. If only
 one copy is changed, the drift detection tests will fail
-in CI (`make check`).
+in CI (`make check`) for the three skills currently
+covered (see Test Coverage above). For the remaining
+pairs, manual verification during review is the only
+safeguard until issue #70 expands test coverage.
 
 ## Credits
 
