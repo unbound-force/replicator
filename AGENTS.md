@@ -434,6 +434,71 @@ internal/
 test/parity/          Shape comparison engine + fixtures
 ```
 
+## Drift Detection (Mirrored Files)
+
+The `replicator init` command scaffolds agent kit files into
+`.opencode/` via `embed.FS` assets stored under
+`internal/agentkit/content/`. The scaffolded copies and
+embedded copies MUST be byte-identical. Changes to either
+location MUST be synchronized to the other.
+
+Run `make check` to confirm drift detection tests pass.
+
+### Mirrored File Pairs
+
+**Skills** (7 files):
+
+| Scaffolded Path | Embedded Path |
+|----------------|---------------|
+| `.opencode/skills/always-on-guidance/SKILL.md` | `internal/agentkit/content/skills/always-on-guidance/SKILL.md` |
+| `.opencode/skills/forge-coordination/SKILL.md` | `internal/agentkit/content/skills/forge-coordination/SKILL.md` |
+| `.opencode/skills/forge-global/SKILL.md` | `internal/agentkit/content/skills/forge-global/SKILL.md` |
+| `.opencode/skills/learning-systems/SKILL.md` | `internal/agentkit/content/skills/learning-systems/SKILL.md` |
+| `.opencode/skills/replicator-cli/SKILL.md` | `internal/agentkit/content/skills/replicator-cli/SKILL.md` |
+| `.opencode/skills/system-design/SKILL.md` | `internal/agentkit/content/skills/system-design/SKILL.md` |
+| `.opencode/skills/testing-patterns/SKILL.md` | `internal/agentkit/content/skills/testing-patterns/SKILL.md` |
+
+**Commands** (5 files):
+
+| Scaffolded Path | Embedded Path |
+|----------------|---------------|
+| `.opencode/commands/forge.md` | `internal/agentkit/content/commands/forge.md` |
+| `.opencode/commands/forge-status.md` | `internal/agentkit/content/commands/forge-status.md` |
+| `.opencode/commands/handoff.md` | `internal/agentkit/content/commands/handoff.md` |
+| `.opencode/commands/inbox.md` | `internal/agentkit/content/commands/inbox.md` |
+| `.opencode/commands/org.md` | `internal/agentkit/content/commands/org.md` |
+
+**Agents** (3 files):
+
+| Scaffolded Path | Embedded Path |
+|----------------|---------------|
+| `.opencode/agents/coordinator.md` | `internal/agentkit/content/agents/coordinator.md` |
+| `.opencode/agents/worker.md` | `internal/agentkit/content/agents/worker.md` |
+| `.opencode/agents/background-worker.md` | `internal/agentkit/content/agents/background-worker.md` |
+
+Not all `.opencode/` files have embedded copies. Files
+that appear only in `.opencode/` (e.g., Divisor agents,
+Speckit commands, OpenSpec skills) are scaffolded by the
+Unbound Force CLI, not by `replicator init`, and are not
+subject to drift detection.
+
+### Test Coverage
+
+`TestSkillFiles_DriftDetection` in
+`internal/agentkit/agentkit_test.go` enforces byte
+parity for `always-on-guidance` and `forge-global`
+skills. `TestForgeCoordinationSkill_StructuralHardening`
+checks `forge-coordination` inline. See issue #70 for
+planned expansion of drift detection coverage to all 15
+mirrored files.
+
+### When Reviewing or Implementing
+
+When a PR modifies a file in either column of the tables
+above, verify the corresponding copy is updated. If only
+one copy is changed, the drift detection tests will fail
+in CI (`make check`).
+
 ## Credits
 
 Go rewrite of [cyborg-swarm](https://github.com/unbound-force/cyborg-swarm),
