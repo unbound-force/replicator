@@ -134,12 +134,8 @@ CUSTOM_BLOCK=$(awk '
   capturing {
     # Lines in the block must be indented more than the key
     match($0, /^[[:space:]]*/); line_indent = RLENGTH
-    if (line_indent > key_indent && $0 !~ /^[[:space:]]*$/ || (capturing && $0 ~ /^[[:space:]]*$/)) {
-      if (line_indent > key_indent || $0 ~ /^[[:space:]]*$/) {
-        print
-      } else {
-        exit
-      }
+    if (line_indent > key_indent || $0 ~ /^[[:space:]]*$/) {
+      print
     } else {
       exit
     }
@@ -173,5 +169,4 @@ fi
 echo "$CUSTOM_BLOCK" | grep -q '#{staged_path}' || \
   fail "rendered-cask: custom_block is missing Ruby interpolation '#{staged_path}'"
 
-echo "PASS: Rendered-cask regression (postflight_steps DSL validated from .goreleaser.yaml)"
 echo "PASS: Homebrew cask integrity regression suite"
