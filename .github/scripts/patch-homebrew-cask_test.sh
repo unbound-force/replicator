@@ -154,10 +154,12 @@ echo "$CUSTOM_BLOCK" | grep -q 'postflight_steps do' || \
   fail "rendered-cask: custom_block is missing 'postflight_steps do' (new Homebrew DSL)"
 
 # Check that legacy 'postflight do' (without _steps) is absent.
-# Use word-boundary matching: 'postflight do' but NOT 'postflight_steps do'.
-if echo "$CUSTOM_BLOCK" | grep -qP '(?<!_steps)\s+do' 2>/dev/null; then
-  # Perl regex available — use it for precise matching
-  if echo "$CUSTOM_BLOCK" | grep -P '^\s*postflight\s+do' | grep -qvP 'postflight_steps'; then
+# Detect Perl regex support with a content-independent probe, then use
+# the appropriate matching strategy.
+if echo "probe" | grep -qP 'probe' 2>/dev/null; then
+  # Perl regex available — use negative lookbehind for precise matching
+  if echo "$CUSTOM_BLOCK" | grep -qP '^\s*postflight\s+do' && \
+     echo "$CUSTOM_BLOCK" | grep -P '^\s*postflight\s+do' | grep -qvP 'postflight_steps'; then
     fail "rendered-cask: custom_block contains legacy 'postflight do' (should be 'postflight_steps do')"
   fi
 else
