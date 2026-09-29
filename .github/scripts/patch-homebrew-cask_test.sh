@@ -112,4 +112,64 @@ new_case mismatched-manifest
 printf '%064d  %s\n' 0 "$ARCHIVE_NAME" > "$CASE_DIR/checksums.txt"
 assert_failure_preserves_cask "mismatched manifest entry"
 
+# ---------------------------------------------------------------------------
+# Rendered-cask regression: validate the custom_block in .goreleaser.yaml
+# emits correct Homebrew postflight_steps DSL without running goreleaser.
+# ---------------------------------------------------------------------------
+GORELEASER="$SCRIPT_DIR/../../.goreleaser.yaml"
+if [ ! -f "$GORELEASER" ]; then
+  fail "rendered-cask: .goreleaser.yaml not found at $GORELEASER"
+fi
+
+# Extract the custom_block literal block scalar value from .goreleaser.yaml.
+# The block starts on the line after "custom_block: |" and continues while
+# lines are indented deeper than the key's column.
+CUSTOM_BLOCK=$(awk '
+  /^[[:space:]]*custom_block:[[:space:]]*\|/ {
+    # Determine the indentation of the key itself
+    match($0, /^[[:space:]]*/); key_indent = RLENGTH
+    capturing = 1
+    next
+  }
+  capturing {
+    # Lines in the block must be indented more than the key
+    match($0, /^[[:space:]]*/); line_indent = RLENGTH
+    if (line_indent > key_indent && $0 !~ /^[[:space:]]*$/ || (capturing && $0 ~ /^[[:space:]]*$/)) {
+      if (line_indent > key_indent || $0 ~ /^[[:space:]]*$/) {
+        print
+      } else {
+        exit
+      }
+    } else {
+      exit
+    }
+  }
+' "$GORELEASER")
+
+if [ -z "$CUSTOM_BLOCK" ]; then
+  fail "rendered-cask: custom_block not found or empty in .goreleaser.yaml"
+fi
+
+echo "$CUSTOM_BLOCK" | grep -q 'postflight_steps do' || \
+  fail "rendered-cask: custom_block is missing 'postflight_steps do' (new Homebrew DSL)"
+
+# Check that legacy 'postflight do' (without _steps) is absent.
+# Use word-boundary matching: 'postflight do' but NOT 'postflight_steps do'.
+if echo "$CUSTOM_BLOCK" | grep -qP '(?<!_steps)\s+do' 2>/dev/null; then
+  # Perl regex available — use it for precise matching
+  if echo "$CUSTOM_BLOCK" | grep -P '^\s*postflight\s+do' | grep -qvP 'postflight_steps'; then
+    fail "rendered-cask: custom_block contains legacy 'postflight do' (should be 'postflight_steps do')"
+  fi
+else
+  # Fallback: check that 'postflight do' only appears as 'postflight_steps do'
+  POSTFLIGHT_LINES=$(echo "$CUSTOM_BLOCK" | grep 'postflight.*do' | grep -cv 'postflight_steps' || true)
+  if [ "$POSTFLIGHT_LINES" -gt 0 ]; then
+    fail "rendered-cask: custom_block contains legacy 'postflight do' (should be 'postflight_steps do')"
+  fi
+fi
+
+echo "$CUSTOM_BLOCK" | grep -q '#{staged_path}' || \
+  fail "rendered-cask: custom_block is missing Ruby interpolation '#{staged_path}'"
+
+echo "PASS: Rendered-cask regression (postflight_steps DSL validated from .goreleaser.yaml)"
 echo "PASS: Homebrew cask integrity regression suite"
