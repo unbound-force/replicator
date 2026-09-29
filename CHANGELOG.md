@@ -8,6 +8,12 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 ### Fixed
+- Homebrew cask `postflight` deprecation warning on Homebrew 7.0+. Replaced
+  the deprecated `postflight do` stanza with the new `postflight_steps`
+  declarative DSL in the GoReleaser cask configuration via `custom_block`.
+  Eliminates deprecation warnings during `brew install` and prevents a hard
+  error after 2027-12-11.
+  (Fixes [#111](https://github.com/unbound-force/replicator/issues/111))
 - Homebrew cask published with checksums on the wrong stanza. The
   `publish-cask` job scanned forward from the `darwin_arm64` marker for the
   next `sha256` line, but the cask emits each stanza's `sha256` before its
