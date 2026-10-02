@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 PATCHER="$SCRIPT_DIR/patch-homebrew-cask.sh"
 FIXTURE="$SCRIPT_DIR/testdata/replicator-v0.5.0.rb"
+RENDERED_CASK=${1:-}
 ARCHIVE_NAME="replicator_0.5.0_darwin_arm64.tar.gz"
 LINUX_ARM64_SHA="d35cf51192f4bc3eb92d32c2a63304fdbc561243a2bb8e406d0a5c7f9d1a83f1"
 
@@ -142,31 +143,26 @@ CUSTOM_BLOCK=$(awk '
   }
 ' "$GORELEASER")
 
-if [ -z "$CUSTOM_BLOCK" ]; then
-  fail "rendered-cask: custom_block not found or empty in .goreleaser.yaml"
-fi
+assert_current_postflight_dsl() {
+  local cask=$1
+  local source=$2
 
-echo "$CUSTOM_BLOCK" | grep -q 'postflight_steps do' || \
-  fail "rendered-cask: custom_block is missing 'postflight_steps do' (new Homebrew DSL)"
-
-# Check that legacy 'postflight do' (without _steps) is absent.
-# Detect Perl regex support with a content-independent probe, then use
-# the appropriate matching strategy.
-if echo "probe" | grep -qP 'probe' 2>/dev/null; then
-  # Perl regex available — use negative lookbehind for precise matching
-  if echo "$CUSTOM_BLOCK" | grep -qP '^\s*postflight\s+do' && \
-     echo "$CUSTOM_BLOCK" | grep -P '^\s*postflight\s+do' | grep -qvP 'postflight_steps'; then
-    fail "rendered-cask: custom_block contains legacy 'postflight do' (should be 'postflight_steps do')"
+  [ -s "$cask" ] || fail "$source: cask is missing or empty"
+  grep -q 'postflight_steps do' "$cask" || \
+    fail "$source: cask is missing 'postflight_steps do' (new Homebrew DSL)"
+  if grep -Eq '^[[:space:]]*postflight[[:space:]]+do' "$cask"; then
+    fail "$source: cask contains legacy 'postflight do' (should be 'postflight_steps do')"
   fi
-else
-  # Fallback: check that 'postflight do' only appears as 'postflight_steps do'
-  POSTFLIGHT_LINES=$(echo "$CUSTOM_BLOCK" | grep 'postflight.*do' | grep -cv 'postflight_steps' || true)
-  if [ "$POSTFLIGHT_LINES" -gt 0 ]; then
-    fail "rendered-cask: custom_block contains legacy 'postflight do' (should be 'postflight_steps do')"
-  fi
-fi
+  grep -q '#{staged_path}' "$cask" || \
+    fail "$source: cask is missing Ruby interpolation '#{staged_path}'"
+}
 
-echo "$CUSTOM_BLOCK" | grep -q '#{staged_path}' || \
-  fail "rendered-cask: custom_block is missing Ruby interpolation '#{staged_path}'"
+CONFIG_CASK="$WORK/custom-block.rb"
+printf '%s\n' "$CUSTOM_BLOCK" > "$CONFIG_CASK"
+assert_current_postflight_dsl "$CONFIG_CASK" "goreleaser custom_block"
+
+if [ -n "$RENDERED_CASK" ]; then
+  assert_current_postflight_dsl "$RENDERED_CASK" "rendered cask"
+fi
 
 echo "PASS: Homebrew cask integrity regression suite"
