@@ -62,6 +62,6 @@
 
 ## 6. Repair CI GoReleaser setup
 
-- [x] 6.1 Add a regression assertion that the GoReleaser action receives its
-  required `args` input, then configure the action with a non-rendering
-  version argument so the snapshot-rendering step can run.
+- [x] 6.1 Add a regression assertion that the GoReleaser action uses
+  `install-only: true`, then configure the action accordingly so the
+  binary persists on PATH for the snapshot-rendering step.
