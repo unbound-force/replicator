@@ -49,3 +49,13 @@
   install works without deprecation warnings), Observable Quality
   (regression test catches reversion), Testability (deterministic,
   no network, no goreleaser binary).
+
+## 5. Validate GoReleaser output
+
+- [x] 5.1 Add rendered-cask requirements and scenarios to the coverage
+  strategy delta specification.
+
+- [x] 5.2 Install a pinned GoReleaser release in `Build and Test`, render a
+  snapshot cask, and validate its postflight DSL in the regression suite.
+
+- [x] 5.3 Run OpenSpec validation and the affected cask regression suite.

@@ -41,12 +41,11 @@ the documented escape hatch for DSL features that GoReleaser does not yet
 model natively. A comment above the stanza tracks the upstream issue for
 future migration when native support ships.
 
-**D2: Validate the goreleaser config, not the rendered cask.** Since the
-`custom_block` is injected verbatim, its content in `.goreleaser.yaml` is
-byte-identical to what appears in the generated cask. Extracting and
-validating it at test time is equivalent to validating the rendered output,
-without requiring goreleaser or network access. This satisfies the
-"deterministic, no network" constraint.
+**D2: Validate both the GoReleaser configuration and rendered cask.** The
+configuration assertions fail quickly for accidental DSL changes. CI also
+renders a snapshot with a pinned GoReleaser version and passes the generated
+cask to the regression suite. This verifies that GoReleaser preserves the
+custom block when it produces the release artifact.
 
 **D3: Use awk for `custom_block` extraction.** The `custom_block` value in
 `.goreleaser.yaml` is a YAML literal block scalar (`|`). Its content starts
@@ -78,11 +77,10 @@ indentation rules. If `.goreleaser.yaml` is reformatted with non-standard
 indentation, the extraction may fail. This is mitigated by the subsequent
 assertions: if extraction produces garbage, the assertions fail.
 
-**Risk: GoReleaser changes `custom_block` semantics.** If a future
-GoReleaser version wraps `custom_block` content in a method or modifies
-whitespace, the cask output may diverge from the raw YAML content. The
-tracking comment and upstream issue reference (goreleaser/goreleaser#6873)
-flag this for future migration.
+**Risk: GoReleaser changes `custom_block` semantics.** A pinned GoReleaser
+version renders the cask in every pull request, so CI fails if its output no
+longer contains the required DSL. The tracking comment and upstream issue
+reference (goreleaser/goreleaser#6873) flag this for future migration.
 
 **Trade-off: awk over YAML parser.** A YAML parser would be more robust
 but would require a new dependency (Python/PyYAML in CI or a Go YAML
