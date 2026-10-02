@@ -59,3 +59,9 @@
   snapshot cask, and validate its postflight DSL in the regression suite.
 
 - [x] 5.3 Run OpenSpec validation and the affected cask regression suite.
+
+## 6. Repair CI GoReleaser setup
+
+- [x] 6.1 Add a regression assertion that the GoReleaser action receives its
+  required `args` input, then configure the action with a non-rendering
+  version argument so the snapshot-rendering step can run.

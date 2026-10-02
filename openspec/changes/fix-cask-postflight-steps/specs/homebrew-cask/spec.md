@@ -26,6 +26,9 @@ validate the rendered cask contains `postflight_steps do`, does not contain the
 legacy `postflight do` stanza, and preserves `#{staged_path}` Ruby
 interpolation.
 
+The GoReleaser setup action MUST receive arguments that allow it to complete
+before the separate snapshot-rendering command runs.
+
 #### Scenario: Rendered cask uses the current Homebrew DSL
 - **GIVEN** the release configuration contains the Homebrew cask definition
 - **WHEN** the `Build and Test` job runs the GoReleaser snapshot render
@@ -38,6 +41,12 @@ interpolation.
 - **WHEN** the cask regression suite runs
 - **THEN** the suite MUST fail rather than validating only the source
   configuration
+
+#### Scenario: GoReleaser setup action completes
+- **GIVEN** the `Build and Test` job installs its pinned GoReleaser version
+- **WHEN** the setup action runs
+- **THEN** it MUST receive a non-rendering argument and complete before the
+  snapshot-rendering command runs
 
 ### Requirement: Configuration-level cask validation
 

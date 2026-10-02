@@ -118,9 +118,22 @@ assert_failure_preserves_cask "mismatched manifest entry"
 # emits correct Homebrew postflight_steps DSL without running goreleaser.
 # ---------------------------------------------------------------------------
 GORELEASER="$SCRIPT_DIR/../../.goreleaser.yaml"
+CI_WORKFLOW="$SCRIPT_DIR/../../.github/workflows/ci.yml"
 if [ ! -f "$GORELEASER" ]; then
   fail "rendered-cask: .goreleaser.yaml not found at $GORELEASER"
 fi
+if [ ! -f "$CI_WORKFLOW" ]; then
+  fail "rendered-cask: CI workflow not found at $CI_WORKFLOW"
+fi
+
+# goreleaser-action executes the supplied args while installing GoReleaser.
+# A version query keeps setup separate from the snapshot render below.
+awk '
+  /uses: goreleaser\/goreleaser-action@/ { in_action = 1; next }
+  in_action && /args: --version/ { found = 1 }
+  in_action && /^[[:space:]]*-[[:space:]]/ { in_action = 0 }
+  END { exit !found }
+' "$CI_WORKFLOW" || fail "rendered-cask: GoReleaser action must receive args: --version"
 
 # Extract the custom_block literal block scalar value from .goreleaser.yaml.
 # The block starts on the line after "custom_block: |" and continues while
