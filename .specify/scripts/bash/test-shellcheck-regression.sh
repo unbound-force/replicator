@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-# shellcheck source=common.sh
+# shellcheck source=./.specify/scripts/bash/common.sh
 source "$SCRIPT_DIR/common.sh"
 
 # Exercise the repository-resolution path regardless of the caller environment.

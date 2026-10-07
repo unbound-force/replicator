@@ -1,3 +1,5 @@
+# Fix Speckit ShellCheck findings
+
 ## Why
 
 MegaLinter's ShellCheck audit reports SC2120, SC2155, SC2221, SC2222, SC2034, and SC1091 findings in the vendored Speckit scripts under `.specify/scripts/bash/`. The findings block the standardized linter check and release preflight, preventing otherwise releasable changes from progressing.

@@ -686,7 +686,7 @@ except Exception:
         fi
     done
 
-    if [ $base_idx -lt 0 ]; then
+    if [ "$base_idx" -lt 0 ]; then
         return 1  # no base layer found
     fi
 

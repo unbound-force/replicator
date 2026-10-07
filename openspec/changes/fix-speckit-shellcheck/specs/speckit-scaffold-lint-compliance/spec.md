@@ -1,3 +1,5 @@
+# Speckit scaffold lint compliance
+
 ## ADDED Requirements
 
 ### Requirement: Vendored Speckit scripts pass ShellCheck

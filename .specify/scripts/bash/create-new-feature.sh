@@ -193,7 +193,7 @@ clean_branch_name() {
 
 # Resolve repository root using common.sh functions which prioritize .specify over git
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=common.sh
+# shellcheck source=./.specify/scripts/bash/common.sh
 source "$SCRIPT_DIR/common.sh"
 
 REPO_ROOT=$(get_repo_root)
@@ -318,7 +318,7 @@ if [ ${#BRANCH_NAME} -gt $MAX_BRANCH_LENGTH ]; then
     # Truncate suffix at word boundary if possible
     TRUNCATED_SUFFIX=$(echo "$BRANCH_SUFFIX" | cut -c1-$MAX_SUFFIX_LENGTH)
     # Remove trailing hyphen if truncation created one
-    TRUNCATED_SUFFIX=$(echo "$TRUNCATED_SUFFIX" | sed 's/-$//')
+    TRUNCATED_SUFFIX="${TRUNCATED_SUFFIX%-}"
     
     ORIGINAL_BRANCH_NAME="$BRANCH_NAME"
     BRANCH_NAME="${FEATURE_NUM}-${TRUNCATED_SUFFIX}"

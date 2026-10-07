@@ -1,3 +1,5 @@
+# Fix Speckit ShellCheck findings tasks
+
 <!--
   [P] marks tasks eligible for parallel execution.
   Add [P] when a task: (a) touches different files from
