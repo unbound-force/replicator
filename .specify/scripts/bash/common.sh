@@ -4,7 +4,8 @@
 # Find repository root by searching upward for .specify directory
 # This is the primary marker for spec-kit projects
 find_specify_root() {
-    local dir="${1:-$(pwd)}"
+    local dir
+    dir="${1:-$(pwd)}"
     # Normalize to absolute path to prevent infinite loop with relative paths
     # Use -- to handle paths starting with - (e.g., -P, -L)
     dir="$(cd -- "$dir" 2>/dev/null && pwd)" || return 1
@@ -29,7 +30,7 @@ find_specify_root() {
 get_repo_root() {
     # First, look for .specify directory (spec-kit's own marker)
     local specify_root
-    if specify_root=$(find_specify_root); then
+    if specify_root=$(find_specify_root "$PWD"); then
         echo "$specify_root"
         return
     fi
@@ -41,7 +42,8 @@ get_repo_root() {
     fi
 
     # Final fallback to script location for non-git repos
-    local script_dir="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local script_dir
+    script_dir="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || return 1
     (cd "$script_dir/../../.." && pwd)
 }
 
@@ -54,7 +56,8 @@ get_current_branch() {
     fi
 
     # Then check git if available at the spec-kit root (not parent)
-    local repo_root=$(get_repo_root)
+    local repo_root
+    repo_root=$(get_repo_root) || return 1
     if has_git; then
         git -C "$repo_root" rev-parse --abbrev-ref HEAD
         return
@@ -70,7 +73,8 @@ get_current_branch() {
 
         for dir in "$specs_dir"/*; do
             if [[ -d "$dir" ]]; then
-                local dirname=$(basename "$dir")
+                local dirname
+                dirname=$(basename "$dir") || return 1
                 if [[ "$dirname" =~ ^([0-9]{8}-[0-9]{6})- ]]; then
                     # Timestamp-based branch: compare lexicographically
                     local ts="${BASH_REMATCH[1]}"
@@ -107,7 +111,8 @@ get_current_branch() {
 has_git() {
     # First check if git command is available (before calling get_repo_root which may use git)
     command -v git >/dev/null 2>&1 || return 1
-    local repo_root=$(get_repo_root)
+    local repo_root
+    repo_root=$(get_repo_root) || return 1
     # Check if .git exists (directory or file for worktrees/submodules)
     [ -e "$repo_root/.git" ] || return 1
     # Verify it's actually a valid git work tree
@@ -252,8 +257,10 @@ find_feature_dir_by_prefix() {
 }
 
 get_feature_paths() {
-    local repo_root=$(get_repo_root)
-    local current_branch=$(get_current_branch)
+    local repo_root
+    repo_root=$(get_repo_root) || return 1
+    local current_branch
+    current_branch=$(get_current_branch) || return 1
     local has_git_repo="false"
 
     if has_git; then
@@ -585,7 +592,7 @@ except Exception:
                         if [ -n "$manifest_file" ]; then
                             # Reject absolute paths and parent traversal
                             case "$manifest_file" in
-                                /*|*../*|../*) manifest_file="" ;;
+                                /*|*../*) manifest_file="" ;;
                             esac
                         fi
                         if [ -n "$manifest_file" ]; then
