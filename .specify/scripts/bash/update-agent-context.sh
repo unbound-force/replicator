@@ -46,10 +46,17 @@ set -euo pipefail
 
 # Get script directory and load common functions
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./.specify/scripts/bash/common.sh
 source "$SCRIPT_DIR/common.sh"
 
 # Get all paths and variables from common functions
-get_feature_paths
+REPO_ROOT=""
+CURRENT_BRANCH=""
+HAS_GIT=""
+IMPL_PLAN=""
+_paths_output=$(get_feature_paths)
+eval "$_paths_output"
+unset _paths_output
 
 NEW_PLAN="$IMPL_PLAN"  # Alias for compatibility with existing code
 AGENT_TYPE="${1:-}"
@@ -238,9 +245,9 @@ get_project_structure() {
     local project_type="$1"
     
     if [[ "$project_type" == *"web"* ]]; then
-        echo "backend/\\nfrontend/\\ntests/"
+        printf '%s\n' 'backend/\nfrontend/\ntests/'
     else
-        echo "src/\\ntests/"
+        printf '%s\n' 'src/\ntests/'
     fi
 }
 
@@ -303,9 +310,12 @@ create_new_agent_file() {
     
     # Perform substitutions with error checking using safer approach
     # Escape special characters for sed by using a different delimiter or escaping
-    local escaped_lang=$(printf '%s\n' "$NEW_LANG" | sed 's/[\[\.*^$()+{}|]/\\&/g')
-    local escaped_framework=$(printf '%s\n' "$NEW_FRAMEWORK" | sed 's/[\[\.*^$()+{}|]/\\&/g')
-    local escaped_branch=$(printf '%s\n' "$CURRENT_BRANCH" | sed 's/[\[\.*^$()+{}|]/\\&/g')
+    local escaped_lang
+    escaped_lang=$(printf '%s\n' "$NEW_LANG" | sed "s/[\[\.*^\$()+{}|]/\\\\&/g") || return 1
+    local escaped_framework
+    escaped_framework=$(printf '%s\n' "$NEW_FRAMEWORK" | sed "s/[\[\.*^\$()+{}|]/\\\\&/g") || return 1
+    local escaped_branch
+    escaped_branch=$(printf '%s\n' "$CURRENT_BRANCH" | sed "s/[\[\.*^\$()+{}|]/\\\\&/g") || return 1
     
     # Build technology stack and recent change strings conditionally
     local tech_stack
@@ -376,7 +386,8 @@ update_existing_agent_file() {
     TEMP_FILES+=("$temp_file")
     
     # Process the file in one pass
-    local tech_stack=$(format_technology_stack "$NEW_LANG" "$NEW_FRAMEWORK")
+    local tech_stack
+    tech_stack=$(format_technology_stack "$NEW_LANG" "$NEW_FRAMEWORK") || return 1
     local new_tech_entries=()
     local new_change_entry=""
     
@@ -412,9 +423,7 @@ update_existing_agent_file() {
     local in_tech_section=false
     local in_changes_section=false
     local tech_entries_added=false
-    local changes_entries_added=false
     local existing_changes_count=0
-    local file_ended=false
     
     while IFS= read -r line || [[ -n "$line" ]]; do
         # Handle Active Technologies section
@@ -449,7 +458,6 @@ update_existing_agent_file() {
                 echo "$new_change_entry" >> "$temp_file"
             fi
             in_changes_section=true
-            changes_entries_added=true
             continue
         elif [[ $in_changes_section == true ]] && [[ "$line" =~ ^##[[:space:]] ]]; then
             echo "$line" >> "$temp_file"
@@ -466,7 +474,8 @@ update_existing_agent_file() {
         
         # Update timestamp
         if [[ "$line" =~ \*\*Last\ updated\*\*:.*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ]]; then
-            echo "$line" | sed "s/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/$current_date/" >> "$temp_file"
+            updated_line=${line/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/$current_date}
+            printf '%s\n' "$updated_line" >> "$temp_file"
         else
             echo "$line" >> "$temp_file"
         fi
@@ -480,17 +489,20 @@ update_existing_agent_file() {
     
     # If sections don't exist, add them at the end of the file
     if [[ $has_active_technologies -eq 0 ]] && [[ ${#new_tech_entries[@]} -gt 0 ]]; then
-        echo "" >> "$temp_file"
-        echo "## Active Technologies" >> "$temp_file"
-        printf '%s\n' "${new_tech_entries[@]}" >> "$temp_file"
+        {
+            echo ""
+            echo "## Active Technologies"
+            printf '%s\n' "${new_tech_entries[@]}"
+        } >> "$temp_file"
         tech_entries_added=true
     fi
     
     if [[ $has_recent_changes -eq 0 ]] && [[ -n "$new_change_entry" ]]; then
-        echo "" >> "$temp_file"
-        echo "## Recent Changes" >> "$temp_file"
-        echo "$new_change_entry" >> "$temp_file"
-        changes_entries_added=true
+        {
+            echo ""
+            echo "## Recent Changes"
+            echo "$new_change_entry"
+        } >> "$temp_file"
     fi
     
     # Move temp file to target atomically

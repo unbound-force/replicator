@@ -25,9 +25,16 @@ done
 
 # Get script directory and load common functions
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./.specify/scripts/bash/common.sh
 source "$SCRIPT_DIR/common.sh"
 
 # Get all paths and variables from common functions
+REPO_ROOT=""
+CURRENT_BRANCH=""
+HAS_GIT=""
+FEATURE_DIR=""
+FEATURE_SPEC=""
+IMPL_PLAN=""
 _paths_output=$(get_feature_paths) || { echo "ERROR: Failed to resolve feature paths" >&2; exit 1; }
 eval "$_paths_output"
 unset _paths_output
@@ -88,4 +95,3 @@ else
     echo "BRANCH: $CURRENT_BRANCH"
     echo "HAS_GIT: $HAS_GIT"
 fi
-
