@@ -16,12 +16,12 @@
 
 ## 2. Repair the vendored scaffold scripts
 
-- [ ] 2.1 [P] Update `common.sh` to resolve its reported SC2155, SC2221, and SC2222 findings without changing command outcomes or generated output.
+- [ ] 2.1 [P] Update `common.sh` to resolve its SC2120, SC2155, SC2221, and SC2222 findings without changing command outcomes or generated output.
 - [ ] 2.2 [P] Update `check-prerequisites.sh` to make its `common.sh` source analyzable by ShellCheck while retaining the existing runtime path resolution.
 - [ ] 2.3 [P] Update `create-new-feature.sh` to resolve its reported SC2155 finding while preserving command failure propagation.
-- [ ] 2.4 [P] Update `setup-plan.sh` to resolve its reported SC1091 and SC2155 findings without changing scaffold behavior.
-- [ ] 2.5 [P] Update `setup-tasks.sh` to resolve its reported SC1091 and SC2155 findings without changing scaffold behavior.
-- [ ] 2.6 [P] Update `update-agent-context.sh` to resolve its reported SC1091 and SC2155 findings without changing scaffold behavior.
+- [ ] 2.4 [P] Update `setup-plan.sh` to resolve its SC1091 finding without changing scaffold behavior.
+- [ ] 2.5 [P] Update `setup-tasks.sh` to resolve its SC1091 finding without changing scaffold behavior.
+- [ ] 2.6 [P] Update `update-agent-context.sh` to resolve its SC1091, SC2155, and SC2034 findings without changing scaffold behavior.
 
 ## 3. Add regression verification
 
@@ -34,4 +34,3 @@
 - [ ] 4.1 Verify the implementation remains aligned with the proposal's PASS assessments for Autonomous Collaboration, Composability First, Observable Quality, and Testability.
 - [ ] 4.2 Check whether README, AGENTS.md, or generated scaffold documentation needs an update; document why no update is needed if the behavior remains unchanged.
 - [ ] 4.3 Run the CI-equivalent checks required by `.github/workflows/`, including `make check`; report any unavailable hosted-linter verification separately.
-<!-- spec-review: passed -->

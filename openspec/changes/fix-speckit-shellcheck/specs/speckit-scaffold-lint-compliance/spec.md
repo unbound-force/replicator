@@ -2,7 +2,7 @@
 
 ### Requirement: Vendored Speckit scripts pass ShellCheck
 
-The repository MUST resolve the reported SC2155, SC2221, SC2222, and SC1091 findings in `.specify/scripts/bash/` using behavior-preserving changes compatible with the upstream Speckit scaffold. Command substitutions SHALL be assigned separately from variable declarations when a combined declaration would hide a command failure.
+The repository MUST resolve all current blocking SC2120, SC2155, SC2221, SC2222, SC2034, and SC1091 findings in the six affected `.specify/scripts/bash/` files using behavior-preserving changes compatible with the upstream Speckit scaffold. Command substitutions SHALL be assigned separately from variable declarations when a combined declaration would hide a command failure.
 
 #### Scenario: Command substitution preserves failure status
 - **GIVEN** an affected scaffold script assigns the result of a command substitution
@@ -13,6 +13,11 @@ The repository MUST resolve the reported SC2155, SC2221, SC2222, and SC1091 find
 - **GIVEN** an affected scaffold script sources `common.sh`
 - **WHEN** ShellCheck evaluates the script
 - **THEN** the source reference MUST be statically analyzable or have a localized, documented directive explaining why static resolution is unsafe
+
+#### Scenario: Helper arguments and local state are valid
+- **GIVEN** the affected helper is called without an explicit directory and the agent-context script processes an existing file
+- **WHEN** ShellCheck evaluates the scripts
+- **THEN** the helper's optional argument contract and local state MUST not produce SC2120 or SC2034 findings
 
 ### Requirement: ShellCheck coverage remains protected
 

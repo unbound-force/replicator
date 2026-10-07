@@ -1,15 +1,16 @@
 ## Context
 
-The standardized CI workflow enables `BASH_SHELLCHECK`. Six vendored Speckit scaffold scripts in `.specify/scripts/bash/` currently report SC2155, SC2221, SC2222, and SC1091, blocking both the lint job and release preflight. These scripts are upstream-managed but are versioned in this repository, so remediation must avoid changing their observable scaffold behavior.
+The standardized CI workflow enables `BASH_SHELLCHECK`. Six vendored Speckit scaffold scripts in `.specify/scripts/bash/` currently report SC2120, SC2155, SC2221, SC2222, SC2034, and SC1091, blocking both the lint job and release preflight. These scripts are upstream-managed but are versioned in this repository, so remediation must avoid changing their observable scaffold behavior.
 
 The proposal assesses all four constitution principles as PASS. This design preserves independent script execution, adds no runtime dependency, retains machine-verifiable lint evidence, and uses isolated checks for regression verification.
 
 ## Goals / Non-Goals
 
 ### Goals
-- Correct reported ShellCheck findings with minimal upstream-compatible script edits.
+- Correct all current blocking ShellCheck findings in the six affected scripts with minimal upstream-compatible edits.
 - Preserve command failure propagation when separating declaration and assignment.
 - Make `common.sh` sourcing visible to ShellCheck without changing runtime path resolution.
+- Correct the affected helper argument contract and remove unused local state without changing output.
 - Retain ShellCheck for all repository shell code and demonstrate the affected findings are resolved.
 
 ### Non-Goals

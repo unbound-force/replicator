@@ -1,13 +1,14 @@
 ## Why
 
-MegaLinter's ShellCheck audit reports SC2155, SC2221, SC2222, and SC1091 findings in the vendored Speckit scripts under `.specify/scripts/bash/`. The findings block the standardized linter check and release preflight, preventing otherwise releasable changes from progressing.
+MegaLinter's ShellCheck audit reports SC2120, SC2155, SC2221, SC2222, SC2034, and SC1091 findings in the vendored Speckit scripts under `.specify/scripts/bash/`. The findings block the standardized linter check and release preflight, preventing otherwise releasable changes from progressing.
 
 The affected files are upstream-managed scaffolding, so the remediation must retain their generated-script behavior and remain suitable for upstream adoption. Disabling ShellCheck globally or suppressing rules outside the affected path would weaken a protected quality gate.
 
 ## What Changes
 
-- Classify and resolve the reported ShellCheck findings in the affected Speckit scaffold scripts with behavior-preserving, upstream-compatible changes.
+- Resolve all current blocking ShellCheck findings in the six affected Speckit scaffold scripts with behavior-preserving, upstream-compatible changes.
 - Separate declarations from command substitutions where required so command failures remain observable.
+- Correct the affected helper argument contract and remove unused local state without changing scaffold output.
 - Make sourced helper paths analyzable by ShellCheck, using localized directives only where static analysis cannot safely resolve an existing dynamic source.
 - Add regression coverage that verifies the repaired script paths and lint configuration continue to detect unrelated ShellCheck findings.
 - Permit a documented ShellCheck exception for only the demonstrated file and rule only if an upstream-compatible correction is demonstrated unsafe and the exception receives explicit authorization.
