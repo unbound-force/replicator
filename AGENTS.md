@@ -17,6 +17,23 @@ coordination tools via the MCP protocol and a CLI for observability.
   medium through which human intent is manifested into
   code.
 
+## Command Resolution
+
+When a workflow names a slash command such as
+`/uf.review-council`, resolve it only from its exact
+project command file: `.opencode/commands/uf.review-council.md`.
+
+- Do not substitute a similarly named global skill, agent,
+  MCP tool, or external command.
+- Load a skill only when the resolved command explicitly
+  instructs use of the `skill` tool.
+- Before executing a referenced command, identify its exact
+  resolved path. If the path is absent, stop and report the
+  missing command.
+- `/uf.unleash` Steps 6 and 8 MUST use
+  `.opencode/commands/uf.review-council.md`; they MUST NOT
+  load or use the global `review-council` skill.
+
 ## Language & Toolchain
 
 - Go 1.26.9+
@@ -98,6 +115,15 @@ non-negotiable.
   validation. Note: MegaLinter runs in CI only; there is
   no local equivalent. Use `mega-linter-runner` if local
   linting is needed (requires Docker).
+- **Scanner Environment Verification**: Before treating a
+  local `govulncheck` result as a repository regression,
+  compare `go version` with the version declared in
+  `go.mod` and used by CI's `setup-go`. Search existing
+  issues for the reported finding. When the local scanner
+  uses a different Go standard library and the finding is
+  not reproducible under the repository toolchain, report
+  an environment discrepancy; do not create, propose, or
+  block an unrelated change on a follow-up issue.
 - **Intent Drift Detection**: Implementation must faithfully
   capture the spec's intent. The parity test suite verifies
   response shapes match the TypeScript version.

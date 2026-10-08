@@ -1,0 +1,6 @@
+# Fullsend's generated pull_request_target shim cannot be hardened locally without breaking the supported integration.
+# Issue #127 explicitly authorizes this finding-specific exception pending an upstream-compatible hardening path.
+rules:
+  dangerous-triggers:
+    ignore:
+      - .github/workflows/fullsend.yaml
