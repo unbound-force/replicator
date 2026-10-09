@@ -1,7 +1,7 @@
 # Replicator
 
 [![CI](https://github.com/unbound-force/replicator/actions/workflows/ci.yml/badge.svg)](https://github.com/unbound-force/replicator/actions/workflows/ci.yml)
-![Go 1.26.6+](https://img.shields.io/badge/Go-1.26.6+-00ADD8?logo=go&logoColor=white)
+![Go 1.26.9+](https://img.shields.io/badge/Go-1.26.9+-00ADD8?logo=go&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Multi-agent coordination for AI coding agents. Single Go binary, zero runtime dependencies.
@@ -47,7 +47,7 @@ cd replicator
 make build
 ```
 
-Requires Go 1.26.6 or later and `make`. The binary is placed at `bin/replicator`. Verify with `bin/replicator version`.
+Requires Go 1.26.9 or later and `make`. The binary is placed at `bin/replicator`. Verify with `bin/replicator version`.
 
 ## Usage
 
