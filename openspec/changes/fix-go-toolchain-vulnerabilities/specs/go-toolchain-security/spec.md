@@ -2,29 +2,29 @@
 
 ### Requirement: Patched Go toolchain baseline
 
-The project MUST declare Go 1.26.6 as its minimum Go version in `go.mod`. CI and release builds MUST select their Go toolchain from that declaration rather than maintain a separate version value.
+The project MUST declare Go 1.26.9 as its minimum Go version in `go.mod`. CI and release builds MUST select their Go toolchain from that declaration rather than maintain a separate version value.
 
 #### Scenario: CI selects the patched toolchain
 
-- **GIVEN** `go.mod` declares Go 1.26.6
+- **GIVEN** `go.mod` declares Go 1.26.9
 - **WHEN** the `Build and Test` workflow configures Go from `go.mod`
-- **THEN** the workflow uses Go 1.26.6 or a compatible later patch release
+- **THEN** the workflow uses Go 1.26.9 or a compatible later patch release
 
 #### Scenario: Release selects the patched toolchain
 
-- **GIVEN** `go.mod` declares Go 1.26.6
+- **GIVEN** `go.mod` declares Go 1.26.9
 - **WHEN** the reusable GoReleaser workflow configures the release environment from `go.mod`
-- **THEN** release binaries are built with Go 1.26.6 or a compatible later patch release
+- **THEN** release binaries are built with Go 1.26.9 or a compatible later patch release
 
 ### Requirement: Current toolchain documentation
 
-Current source-build and contributor documentation MUST identify Go 1.26.6 or later as the supported toolchain baseline. Historical specifications and changelog records MUST retain the versions that applied when those records were written.
+Current source-build and contributor documentation MUST identify Go 1.26.9 or later as the supported toolchain baseline. Historical specifications and changelog records MUST retain the versions that applied when those records were written.
 
 #### Scenario: Developer checks the build prerequisite
 
 - **GIVEN** a developer reads the current project or contributor documentation
 - **WHEN** the developer checks the Go prerequisite
-- **THEN** the documentation states Go 1.26.6 or later
+- **THEN** the documentation states Go 1.26.9 or later
 
 #### Scenario: Historical records remain accurate
 
@@ -38,7 +38,7 @@ The patched toolchain MUST pass `govulncheck ./...` without any reachable standa
 
 #### Scenario: Reachable standard-library vulnerabilities are resolved
 
-- **GIVEN** the project is built and analyzed with Go 1.26.6 or later
+- **GIVEN** the project is built and analyzed with Go 1.26.9 or later
 - **WHEN** `govulncheck ./...` scans all packages
 - **THEN** the scan reports no reachable standard-library vulnerability
 

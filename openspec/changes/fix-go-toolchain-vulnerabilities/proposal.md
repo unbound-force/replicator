@@ -1,13 +1,13 @@
 ## Why
 
-`govulncheck ./...` reports four reachable vulnerabilities in the Go 1.26.5 standard library used for local builds. Go 1.26.6 fixes all four advisories. The project needs one explicit minimum toolchain version so development, CI, and release builds produce binaries without the known vulnerable code.
+`govulncheck ./...` reports four reachable vulnerabilities from issue #131 in the Go 1.26.5 standard library used for local builds. Although Go 1.26.6 fixes those advisories, the current vulnerability database reports nine additional reachable standard-library vulnerabilities in Go 1.26.6. Go 1.26.9 fixes all thirteen findings. The project needs one explicit minimum toolchain version so development, CI, and release builds produce binaries without the known vulnerable code.
 
 This change addresses GitHub issue #131. It also prevents the documented source-build requirements from lagging behind the version selected by `go.mod`.
 
 ## What Changes
 
-- Set the module's Go version to 1.26.6 so CI and the reusable release workflow select the patched toolchain.
-- Update current developer and source-build documentation to require Go 1.26.6 or later.
+- Set the module's Go version to 1.26.9 so CI and the reusable release workflow select the patched toolchain.
+- Update current developer and source-build documentation to require Go 1.26.9 or later.
 - Keep the existing `govulncheck`, test, coverage, parity, build, and release gates intact and use them to verify the upgrade.
 - Leave historical specifications, changelog entries, action pins, and protected quality thresholds unchanged.
 
