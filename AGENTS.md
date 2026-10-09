@@ -19,7 +19,7 @@ coordination tools via the MCP protocol and a CLI for observability.
 
 ## Language & Toolchain
 
-- Go 1.25+
+- Go 1.26.9+
 - SQLite via `modernc.org/sqlite` (pure Go, no CGo)
 - CLI via `cobra`
 - Tests via `go test` (stdlib)
@@ -444,11 +444,11 @@ Go rewrite of [cyborg-swarm](https://github.com/unbound-force/cyborg-swarm),
 originally by [Joel Hooks](https://github.com/joelhooks).
 
 ## Active Technologies
-- Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations) (001-go-rewrite-phases)
+- Go 1.26.9+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations) (001-go-rewrite-phases)
 - SQLite at `~/.config/uf/replicator/replicator.db` (WAL mode) (001-go-rewrite-phases)
-- Go 1.25+ + `charmbracelet/lipgloss v1.1.0`, `charmbracelet/log v1.0.0`, `muesli/termenv v0.16.0`, `charmbracelet/lipgloss/table` (sub-package of lipgloss) (002-charm-ux)
+- Go 1.26.9+ + `charmbracelet/lipgloss v1.1.0`, `charmbracelet/log v1.0.0`, `muesli/termenv v0.16.0`, `charmbracelet/lipgloss/table` (sub-package of lipgloss) (002-charm-ux)
 - SQLite via `modernc.org/sqlite` (unchanged) (002-charm-ux)
-- Go 1.25+ + cobra (CLI), modernc.org/sqlite (pure Go SQLite), embed (stdlib) (003-rename-terminology)
+- Go 1.26.9+ + cobra (CLI), modernc.org/sqlite (pure Go SQLite), embed (stdlib) (003-rename-terminology)
 
 ## Recent Changes
 - 101-adopt-org-infra-ci: Added MegaLinter CI workflow via `complytime/org-infra` reusable workflow, added `.mega-linter.yml` config, added `Standardized CI / Run linters` to branch protection and release preflight gating

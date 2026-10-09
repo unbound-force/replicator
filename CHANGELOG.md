@@ -60,6 +60,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   now `/uf.unleash`, `/cobalt-crush` is now `/uf.cobalt-crush`)
 
 ### Security
+- Minimum Go toolchain raised to 1.26.9 to resolve reachable standard-library
+  vulnerabilities reported in issue #131.
+  - Spec: `openspec/changes/fix-go-toolchain-vulnerabilities/specs/go-toolchain-security/spec.md`
 - Go bumped to 1.25.12 for crypto/tls vulnerability fix
 - All CI actions and reusable workflows pinned to commit SHAs for
   supply chain integrity (`actions/checkout`, `actions/setup-go`,
