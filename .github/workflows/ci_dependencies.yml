@@ -8,7 +8,7 @@ name: Dependencies
 on:
   push:
     branches: [main]
-  pull_request_target:
+  pull_request:
     branches: [main]
 
 permissions:
@@ -20,7 +20,7 @@ env:
   MIN_RELEASE_AGE_HOURS: 24
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
     name: Dependabot Comment
     if: >-
       always()
-      && github.event_name == 'pull_request_target'
+      && github.event_name == 'pull_request'
       && github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     needs: [call_deps_reviewer, call_dependabot_reviewer]
@@ -124,35 +124,52 @@ jobs:
               comment.user?.login === 'github-actions[bot]'
               && comment.body?.includes('<!-- dependency-review-report -->')
             );
-            core.setOutput('comment-id', existingReport ? String(existingReport.id) : '');
-
-      - name: Publish dependency review report
-        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-id: ${{ steps.prepare_report.outputs.comment-id }}
-          edit-mode: replace
-          body: |
-            <!-- dependency-review-report -->
-            ## Standardized Dependabot Review Summary
-
-            | Evidence | Value |
-            | --- | --- |
-            | Dependency review conclusion | `${{ steps.prepare_report.outputs.review-conclusion }}` |
-            | Risk | `${{ steps.prepare_report.outputs.risk }}` |
-            | Dependency | `${{ steps.prepare_report.outputs.dependency }}` |
-            | Version | `${{ steps.prepare_report.outputs.version }}` |
-            | Release age | `${{ steps.prepare_report.outputs.release-age }}` |
-            | Workflow logs | [View run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
-
-            **${{ steps.prepare_report.outputs.eligibility }}**
+            const reportBody = [
+              '<!-- dependency-review-report -->',
+              '## Standardized Dependabot Review Summary',
+              '',
+              '| Evidence | Value |',
+              '| --- | --- |',
+              `| Dependency review conclusion | \`${reviewConclusion}\` |`,
+              `| Risk | \`${risk}\` |`,
+              `| Dependency | \`${dependency}\` |`,
+              `| Version | \`${version}\` |`,
+              `| Release age | \`${Number.isFinite(releaseAge) ? `${releaseAge} hours` : unavailable}\` |`,
+              `| Workflow logs | [View run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) |`,
+              '',
+              `**${eligible ? 'Eligible for automated approval pending live review-state validation' : 'Manual review required'}**`,
+            ].join('\n');
+            const restrictedTokenError = (error) => error?.status === 403
+              && /resource not accessible by integration/i.test(error.message || '');
+            try {
+              if (existingReport) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingReport.id,
+                  body: reportBody,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: reportBody,
+                });
+              }
+            } catch (error) {
+              if (!restrictedTokenError(error)) {
+                throw error;
+              }
+              core.notice('Dependency review report was not published because this pull-request token cannot write comments. Review the workflow logs and comment manually if needed.');
+            }
 
   approve_dependabot_prs:
     name: Dependabot Approval
     # The job-level literal must match MIN_RELEASE_AGE_HOURS; env.* is unavailable here.
     if: >-
       always()
-      && github.event_name == 'pull_request_target'
+      && github.event_name == 'pull_request'
       && github.event.pull_request.user.login == 'dependabot[bot]'
       && needs.call_deps_reviewer.result == 'success'
       && needs.call_dependabot_reviewer.result == 'success'
@@ -205,7 +222,7 @@ jobs:
             const validDependency = dependency !== 'unavailable';
             const validVersion = version !== 'unavailable';
 
-            const staticSignalsAreSafe = eventName === 'pull_request_target'
+            const staticSignalsAreSafe = eventName === 'pull_request'
               && author === 'dependabot[bot]'
               && /^[0-9a-f]{40}$/.test(expectedHeadSHA)
               && depsReviewResult === 'success'
@@ -273,18 +290,29 @@ jobs:
               throw new Error('Pull request head changed after dependency review.');
             }
 
-            await github.rest.pulls.createReview({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-              commit_id: expectedHeadSHA,
-              event: 'APPROVE',
-              body: [
-                'Automated dependency approval after static and live review-state validation.',
-                `Dependency: ${dependency}@${version}`,
-                `Dependency review result: ${depsReviewResult}`,
-                `Dependency review conclusion: ${reviewConclusion}`,
-                `Risk: ${risk}`,
-                `Release age: ${releaseAge} hours (minimum: ${minimumReleaseAge} hours)`,
-              ].join('\n'),
-            });
+            try {
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                commit_id: expectedHeadSHA,
+                event: 'APPROVE',
+                body: [
+                  'Automated dependency approval after static and live review-state validation.',
+                  `Dependency: ${dependency}@${version}`,
+                  `Dependency review result: ${depsReviewResult}`,
+                  `Dependency review conclusion: ${reviewConclusion}`,
+                  `Risk: ${risk}`,
+                  `Release age: ${releaseAge} hours (minimum: ${minimumReleaseAge} hours)`,
+                ].join('\n'),
+              });
+            } catch (error) {
+              const restrictedTokenError = error?.status === 403
+                && /resource not accessible by integration/i.test(error.message || '');
+              if (!restrictedTokenError) {
+                throw error;
+              }
+              core.notice('Automated approval skipped: this pull-request token cannot write reviews. A maintainer must approve the Dependabot update manually.');
+              core.setFailed('Manual review required: token cannot approve this Dependabot pull request.');
+              throw new Error('Token cannot approve this Dependabot pull request.');
+            }

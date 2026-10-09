@@ -18,7 +18,6 @@ const (
 	dependabotAuthor  = "dependabot[bot]"
 	orgInfraSHA       = "bd3718a218d649b093269fe4a979c4a4632dfad2"
 	approvalScriptSHA = "3a2844b7e9c422d3c10d287c895573f7108da1b3"
-	commentActionSHA  = "e8674b075228eee787fea43ef493e45ece1004c9"
 	minimumReleaseAge = "24"
 	minimumSHAPins    = 4
 	reviewedHeadSHA   = "0123456789abcdef0123456789abcdef01234567"
@@ -40,6 +39,7 @@ type policyFixture struct {
 	omitVersion            bool
 	reviews                []reviewFixture
 	currentHeadSHA         string
+	denyWrite              bool
 	wantApproval           bool
 	wantFailure            string
 	wantThrown             string
@@ -64,6 +64,8 @@ type scriptResult struct {
 		CommitID string `json:"commit_id"`
 	} `json:"approvals"`
 	Failures []string          `json:"failures"`
+	Notices  []string          `json:"notices"`
+	Writes   []string          `json:"writes"`
 	Thrown   string            `json:"thrown"`
 	Outputs  map[string]string `json:"outputs"`
 	Sentinel string            `json:"sentinel"`
@@ -79,6 +81,9 @@ type reportFixture struct {
 	version                 string
 	releaseAge              string
 	existingReportCommentID int64
+	denyWrite               bool
+	writeErrorMessage       string
+	writeErrorStatus        int
 	wantEligibility         string
 	wantReviewConclusion    string
 	wantRisk                string
@@ -92,9 +97,12 @@ func TestCIDependenciesWorkflow_StructureEnforcesGuardedApproval(t *testing.T) {
 
 	assertMatches(t, workflow, `(?m)^# .+\n# --\n# .+`, "purpose header")
 	assertMatches(t, workflow, `(?ms)^on:\s*\n\s+push:\s*\n\s+branches:\s*\[main\]`, "main push trigger")
-	assertMatches(t, workflow, `(?ms)^on:.*?\n\s+pull_request_target:\s*\n\s+branches:\s*\[main\]`, "trusted main pull-request trigger")
+	assertMatches(t, workflow, `(?ms)^on:.*?\n\s+pull_request:\s*\n\s+branches:\s*\[main\]`, "unprivileged main pull-request trigger")
+	if strings.Contains(workflow, "pull_request_target:") {
+		t.Fatal("workflow must not use the privileged pull_request_target trigger")
+	}
 	assertMatches(t, workflow, `(?ms)^permissions:\s*\n\s+contents:\s+read\s*\n\s+issues:\s+none\s*\n\s+pull-requests:\s+none`, "read-only workflow permissions")
-	assertMatches(t, workflow, `(?ms)^concurrency:\s*\n\s+group:\s+.*github\.workflow.*github\.event\.pull_request\.number.*github\.ref.*\n\s+cancel-in-progress:\s+true`, "PR- or ref-scoped concurrency")
+	assertMatches(t, workflow, `(?ms)^concurrency:\s*\n\s+group:\s+.*github\.workflow.*github\.event_name.*github\.event\.pull_request\.number.*github\.ref.*\n\s+cancel-in-progress:\s+true`, "event- and PR- or ref-scoped concurrency")
 
 	jobs := childKeys(t, yamlSection(t, workflow, "jobs", 0), 2)
 	wantJobs := []string{
@@ -118,36 +126,38 @@ func TestCIDependenciesWorkflow_StructureEnforcesGuardedApproval(t *testing.T) {
 	assertFullSHAPins(t, workflow)
 
 	assertContains(t, commentJob, "always()", "failure-tolerant reporting condition")
-	assertMatches(t, commentJob, `(?m)^\s+&& github\.event_name == 'pull_request_target'$`, "trusted pull-request reporting guard")
+	assertMatches(t, commentJob, `(?m)^\s+&& github\.event_name == 'pull_request'$`, "unprivileged pull-request reporting guard")
 	assertMatches(t, commentJob, `(?m)^\s+&& github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'$`, "Dependabot-only reporting guard")
 	assertContains(t, commentJob, "needs.call_deps_reviewer.result", "general review result wiring")
 	for _, output := range []string{"risk_level", "dep_name", "dep_version", "release_age_hours"} {
 		assertContains(t, commentJob, "needs.call_dependabot_reviewer.outputs."+output, output+" output wiring")
 	}
 	assertPermissions(t, commentJob, map[string]string{"issues": "read", "pull-requests": "write"})
-	assertContains(t, commentJob, "peter-evans/create-or-update-comment@"+commentActionSHA, "pinned comment action")
-	assertMatches(t, commentJob, `(?m)^\s+edit-mode:\s+replace\s*$`, "idempotent report replacement")
+	assertContains(t, commentJob, "github.rest.issues.createComment", "report creation API")
+	assertContains(t, commentJob, "github.rest.issues.updateComment", "idempotent report update API")
+	assertContains(t, commentJob, "restrictedTokenError", "restricted-token report handling")
+	assertContains(t, commentJob, "Dependency review report was not published", "actionable report skip notice")
 	assertIdempotentReport(t, commentJob)
 
-	commentBody := yamlLiteralBlock(t, commentJob, "body")
+	commentBody := yamlLiteralBlock(t, commentJob, "script")
 	for _, evidence := range []string{
 		"Dependency review conclusion",
 		"Risk",
 		"Dependency",
 		"Version",
 		"Release age",
-		"github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+		"https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}",
 	} {
 		assertContains(t, commentBody, evidence, "review report evidence")
 	}
-	assertContains(t, commentBody, "steps.prepare_report.outputs.eligibility", "generated eligibility outcome")
+	assertContains(t, commentBody, "eligible ?", "generated eligibility outcome")
 	assertContains(t, commentJob, "Eligible for automated approval pending live review-state validation", "eligible report outcome")
 	assertContains(t, commentJob, "Manual review required", "manual-review report outcome")
 	if strings.Contains(strings.ToLower(commentBody), "approved") {
 		t.Fatal("review report must describe eligibility without claiming approval")
 	}
 
-	assertMatches(t, approvalJob, `(?m)^\s+&& github\.event_name == 'pull_request_target'$`, "trusted pull-request approval guard")
+	assertMatches(t, approvalJob, `(?m)^\s+&& github\.event_name == 'pull_request'$`, "unprivileged pull-request approval guard")
 	assertMatches(t, approvalJob, `(?m)^\s+&& github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'$`, "Dependabot-only approval guard")
 	assertContains(t, approvalJob, "needs.call_deps_reviewer.result", "approval review result predicate")
 	assertContains(t, approvalJob, "needs.call_dependabot_reviewer.outputs.risk", "approval risk predicate")
@@ -190,6 +200,39 @@ func TestCIDependenciesWorkflow_StructureEnforcesGuardedApproval(t *testing.T) {
 	}
 
 	assertNoMutationCapabilities(t, workflow)
+}
+
+func TestFullsendZizmorException_IsNarrowAndDocumented(t *testing.T) {
+	config := readRepositoryFile(t, ".github", "zizmor.yml")
+	wantConfig := `# Fullsend's generated pull_request_target shim cannot be hardened locally without breaking the supported integration.
+# Issue #127 explicitly authorizes this finding-specific exception pending an upstream-compatible hardening path.
+rules:
+  dangerous-triggers:
+    ignore:
+      - .github/workflows/fullsend.yaml
+`
+	if config != wantConfig {
+		t.Fatalf("zizmor configuration = %q, want only the documented Fullsend dangerous-triggers exception", config)
+	}
+
+	documentation := readRepositoryFile(t, "docs", "ci-workflow-security.md")
+	for _, requirement := range []string{
+		"dangerous-triggers",
+		"Issue #127",
+		".github/workflows/fullsend.yaml",
+		"Fullsend-managed generated shim",
+		"pull_request_target",
+		"permissions: {}",
+		"FULLSEND_GCP_WIF_PROVIDER",
+		"FULLSEND_GCP_PROJECT_ID",
+		"OTEL_EXPORTER_OTLP_TRACES_HEADERS",
+		"OTEL_EXPORTER_OTLP_HEADERS",
+		"d5f36921ac754705619f38c637ef692873809fbc",
+		"no checkout action",
+		"upstream-supported Fullsend configuration or generator update",
+	} {
+		assertContains(t, documentation, requirement, "Fullsend exception documentation")
+	}
 }
 
 func TestCIDependenciesWorkflow_ApprovalScriptEvaluatesPolicyFixtures(t *testing.T) {
@@ -285,8 +328,8 @@ func TestCIDependenciesWorkflow_ApprovalScriptEvaluatesPolicyFixtures(t *testing
 			risk: "low", releaseAge: "48",
 		},
 		{
-			name:      "untrusted pull request event",
-			eventName: "pull_request", author: dependabotAuthor, depsReviewResult: "success",
+			name:      "privileged pull-request-target event",
+			eventName: "pull_request_target", author: dependabotAuthor, depsReviewResult: "success",
 			dependabotReviewResult: "success", risk: "low", releaseAge: "48",
 		},
 		{
@@ -612,13 +655,89 @@ func TestCIDependenciesWorkflow_ReportScriptEvaluatesPolicyFixtures(t *testing.T
 			assertOutputEquals(t, result.Outputs, "dependency", fixture.wantDependency)
 			assertOutputEquals(t, result.Outputs, "version", fixture.wantVersion)
 			assertOutputEquals(t, result.Outputs, "release-age", fixture.wantReleaseAge)
-			wantCommentID := ""
-			if fixture.existingReportCommentID != 0 {
-				wantCommentID = fmt.Sprint(fixture.existingReportCommentID)
-			}
-			assertOutputEquals(t, result.Outputs, "comment-id", wantCommentID)
 		})
 	}
+}
+
+func TestCIDependenciesWorkflow_RestrictedTokenWritesDegradeSafely(t *testing.T) {
+	workflow := readDependencyWorkflow(t)
+	approvalScript := yamlLiteralBlock(t, yamlSection(t, workflow, "approve_dependabot_prs", 2), "script")
+	reportScript := yamlLiteralBlock(t, yamlSection(t, workflow, "comment_on_dependabot_prs", 2), "script")
+
+	approvalResult := executeApprovalScript(t, approvalScript, policyFixture{
+		author: dependabotAuthor, depsReviewResult: "success", dependabotReviewResult: "success",
+		risk: "low", releaseAge: minimumReleaseAge, dependency: "example.org/module", version: "1.2.3",
+		denyWrite: true,
+	})
+	if len(approvalResult.Approvals) != 0 {
+		t.Errorf("restricted-token approval created %d approvals, want none", len(approvalResult.Approvals))
+	}
+	if len(approvalResult.Failures) != 1 || approvalResult.Failures[0] != "Manual review required: token cannot approve this Dependabot pull request." {
+		t.Errorf("restricted-token approval failures = %v", approvalResult.Failures)
+	}
+	if approvalResult.Thrown != "Token cannot approve this Dependabot pull request." {
+		t.Errorf("restricted-token approval thrown = %q", approvalResult.Thrown)
+	}
+	if len(approvalResult.Notices) != 1 || approvalResult.Notices[0] != "Automated approval skipped: this pull-request token cannot write reviews. A maintainer must approve the Dependabot update manually." {
+		t.Errorf("restricted-token approval notices = %v", approvalResult.Notices)
+	}
+
+	reportResult := executeReportScript(t, reportScript, reportFixture{
+		depsReviewResult: "success", reviewConclusion: "success", dependabotReviewResult: "success",
+		risk: "low", dependency: "example.org/module", version: "1.2.3", releaseAge: minimumReleaseAge,
+		denyWrite: true,
+	})
+	if reportResult.Thrown != "" || len(reportResult.Failures) != 0 {
+		t.Errorf("restricted-token report must safely skip publication: failures=%v thrown=%q", reportResult.Failures, reportResult.Thrown)
+	}
+	if len(reportResult.Writes) != 0 {
+		t.Errorf("restricted-token report writes = %v, want none", reportResult.Writes)
+	}
+	if len(reportResult.Notices) != 1 || reportResult.Notices[0] != "Dependency review report was not published because this pull-request token cannot write comments. Review the workflow logs and comment manually if needed." {
+		t.Errorf("restricted-token report notices = %v", reportResult.Notices)
+	}
+	assertOutputEquals(t, reportResult.Outputs, "eligibility", "Eligible for automated approval pending live review-state validation")
+}
+
+func TestCIDependenciesWorkflow_ReportUpdateErrors_HandleOnlyRestrictedTokens(t *testing.T) {
+	workflow := readDependencyWorkflow(t)
+	reportScript := yamlLiteralBlock(t, yamlSection(t, workflow, "comment_on_dependabot_prs", 2), "script")
+
+	t.Run("restricted token skips existing report update", func(t *testing.T) {
+		result := executeReportScript(t, reportScript, reportFixture{
+			depsReviewResult: "success", reviewConclusion: "success", dependabotReviewResult: "success",
+			risk: "low", dependency: "example.org/module", version: "1.2.3", releaseAge: minimumReleaseAge,
+			existingReportCommentID: 42, denyWrite: true,
+		})
+
+		if result.Thrown != "" || len(result.Failures) != 0 {
+			t.Errorf("restricted-token report update must safely skip publication: failures=%v thrown=%q", result.Failures, result.Thrown)
+		}
+		if len(result.Writes) != 0 {
+			t.Errorf("restricted-token report update writes = %v, want none", result.Writes)
+		}
+		if len(result.Notices) != 1 || result.Notices[0] != "Dependency review report was not published because this pull-request token cannot write comments. Review the workflow logs and comment manually if needed." {
+			t.Errorf("restricted-token report update notices = %v", result.Notices)
+		}
+	})
+
+	t.Run("unrelated 403 propagates", func(t *testing.T) {
+		result := executeReportScript(t, reportScript, reportFixture{
+			depsReviewResult: "success", reviewConclusion: "success", dependabotReviewResult: "success",
+			risk: "low", dependency: "example.org/module", version: "1.2.3", releaseAge: minimumReleaseAge,
+			existingReportCommentID: 42, writeErrorMessage: "Secondary rate limit exceeded", writeErrorStatus: 403,
+		})
+
+		if result.Thrown != "Secondary rate limit exceeded" {
+			t.Errorf("unrelated report API failure thrown = %q, want %q", result.Thrown, "Secondary rate limit exceeded")
+		}
+		if len(result.Notices) != 0 {
+			t.Errorf("unrelated report API failure notices = %v, want none", result.Notices)
+		}
+		if len(result.Writes) != 0 {
+			t.Errorf("unrelated report API failure writes = %v, want none", result.Writes)
+		}
+	})
 }
 
 func TestPolicyEnvironment_ReplacesApprovalScriptInputs(t *testing.T) {
@@ -648,15 +767,19 @@ func TestWorkflowScriptHarnesses_DoNotInheritHostEnvironment(t *testing.T) {
 }
 
 func readDependencyWorkflow(t *testing.T) string {
+	return readRepositoryFile(t, ".github", "workflows", "ci_dependencies.yml")
+}
+
+func readRepositoryFile(t *testing.T, pathElements ...string) string {
 	t.Helper()
 	_, currentFile, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("runtime.Caller: could not determine test source path")
 	}
-	path := filepath.Join(filepath.Dir(currentFile), "..", "..", ".github", "workflows", "ci_dependencies.yml")
+	path := filepath.Join(append([]string{filepath.Dir(currentFile), "..", ".."}, pathElements...)...)
 	content, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("read dependency workflow %q: %v", path, err)
+		t.Fatalf("read repository file %q: %v", path, err)
 	}
 	return string(content)
 }
@@ -682,6 +805,7 @@ func executeApprovalScript(t *testing.T, script string, fixture policyFixture) s
 		"author":         fixture.author,
 		"reviews":        fixture.reviews,
 		"currentHeadSHA": currentHeadSHA,
+		"denyWrite":      fixture.denyWrite,
 	})
 	if err != nil {
 		t.Fatalf("marshal policy fixture: %v", err)
@@ -691,6 +815,7 @@ func executeApprovalScript(t *testing.T, script string, fixture policyFixture) s
 const fixture = JSON.parse(process.env.POLICY_FIXTURE);
 const approvals = [];
 const failures = [];
+const notices = [];
 const github = {
   paginate: async () => fixture.reviews || [],
   request: async (route, request) => {
@@ -702,7 +827,15 @@ const github = {
     pulls: {
       get: async () => ({data: {head: {sha: fixture.currentHeadSHA}}}),
       listReviews: async () => ({data: fixture.reviews || []}),
-      createReview: async (request) => { approvals.push(request); return {data: request}; }
+      createReview: async (request) => {
+        if (fixture.denyWrite) {
+          const error = new Error("Resource not accessible by integration");
+          error.status = 403;
+          throw error;
+        }
+        approvals.push(request);
+        return {data: request};
+      }
     }
   }
 };
@@ -713,7 +846,7 @@ const context = {
 };
 const core = {
   setFailed: (message) => failures.push(String(message)),
-  info: () => {}, warning: () => {}, notice: () => {}, debug: () => {}
+  info: () => {}, warning: () => {}, notice: (message) => notices.push(String(message)), debug: () => {}
 };
 const console = {log: () => {}, error: () => {}, warn: () => {}};
 (async () => {
@@ -723,7 +856,7 @@ const console = {log: () => {}, error: () => {}, warn: () => {}};
   } catch (error) {
     thrown = String(error && error.message ? error.message : error);
   }
-  process.stdout.write(JSON.stringify({approvals, failures, thrown, sentinel: process.env.WORKFLOWTEST_HOST_SENTINEL || ""}));
+  process.stdout.write(JSON.stringify({approvals, failures, notices, thrown, sentinel: process.env.WORKFLOWTEST_HOST_SENTINEL || ""}));
 })();
 `, indent(script, "    "))
 
@@ -753,7 +886,12 @@ func executeReportScript(t *testing.T, script string, fixture reportFixture) scr
 			"body": "<!-- dependency-review-report -->",
 		})
 	}
-	fixtureJSON, err := json.Marshal(map[string]any{"comments": comments})
+	fixtureJSON, err := json.Marshal(map[string]any{
+		"comments":          comments,
+		"denyWrite":         fixture.denyWrite,
+		"writeErrorMessage": fixture.writeErrorMessage,
+		"writeErrorStatus":  fixture.writeErrorStatus,
+	})
 	if err != nil {
 		t.Fatalf("marshal report fixture: %v", err)
 	}
@@ -761,10 +899,39 @@ func executeReportScript(t *testing.T, script string, fixture reportFixture) scr
 	harness := fmt.Sprintf(`
 const fixture = JSON.parse(process.env.REPORT_FIXTURE);
 const failures = [];
+const notices = [];
+const writes = [];
 const outputs = {};
+const writeError = () => {
+  if (fixture.writeErrorMessage) {
+    const error = new Error(fixture.writeErrorMessage);
+    error.status = fixture.writeErrorStatus;
+    return error;
+  }
+  if (fixture.denyWrite) {
+    const error = new Error("Resource not accessible by integration");
+    error.status = 403;
+    return error;
+  }
+  return null;
+};
 const github = {
   paginate: async () => fixture.comments || [],
-  rest: {issues: {listComments: async () => ({data: fixture.comments || []})}}
+  rest: {issues: {
+    listComments: async () => ({data: fixture.comments || []}),
+    createComment: async (request) => {
+      const error = writeError();
+      if (error) throw error;
+      writes.push("createComment");
+      return {data: request};
+    },
+    updateComment: async (request) => {
+      const error = writeError();
+      if (error) throw error;
+      writes.push("updateComment");
+      return {data: request};
+    }
+  }}
 };
 const context = {
   repo: {owner: "unbound-force", repo: "replicator"},
@@ -772,7 +939,8 @@ const context = {
 };
 const core = {
   setOutput: (name, value) => { outputs[String(name)] = String(value); },
-  setFailed: (message) => failures.push(String(message))
+  setFailed: (message) => failures.push(String(message)),
+  notice: (message) => notices.push(String(message))
 };
 (async () => {
   let thrown = "";
@@ -781,7 +949,7 @@ const core = {
   } catch (error) {
     thrown = String(error && error.message ? error.message : error);
   }
-  process.stdout.write(JSON.stringify({failures, outputs, thrown, sentinel: process.env.WORKFLOWTEST_HOST_SENTINEL || ""}));
+  process.stdout.write(JSON.stringify({failures, notices, outputs, writes, thrown, sentinel: process.env.WORKFLOWTEST_HOST_SENTINEL || ""}));
 })();
 `, indent(script, "    "))
 
@@ -816,7 +984,7 @@ func requireNode(t *testing.T) string {
 func policyEnvironment(fixture policyFixture) []string {
 	eventName := fixture.eventName
 	if eventName == "" {
-		eventName = "pull_request_target"
+		eventName = "pull_request"
 	}
 	reviewConclusion := fixture.reviewConclusion
 	if reviewConclusion == "" && !fixture.omitReviewConclusion {
@@ -1004,14 +1172,8 @@ func assertIdempotentReport(t *testing.T, commentJob string) {
 	if !markerPattern.MatchString(commentJob) {
 		t.Fatal("review report must contain the stable <!-- dependency-review-report --> replacement marker")
 	}
-	commentIDPattern := regexp.MustCompile(`(?m)^\s+comment-id:\s+\$\{\{\s*steps\.([A-Za-z0-9_-]+)\.outputs\.comment-id\s*}}\s*$`)
-	match := commentIDPattern.FindStringSubmatch(commentJob)
-	if match == nil {
-		t.Fatal("comment action must consume a discovered comment-id output for replacement")
-	}
-	assertMatches(t, commentJob, `(?m)^\s+id:\s+`+regexp.QuoteMeta(match[1])+`\s*$`, "comment lookup step")
+	assertContains(t, commentJob, "existingReport.id", "existing report ID used for replacement")
 	assertContains(t, commentJob, "listComments", "existing report lookup")
-	assertContains(t, commentJob, "setOutput", "comment-id output publication")
 }
 
 func assertNoMutationCapabilities(t *testing.T, workflow string) {
