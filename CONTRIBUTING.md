@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Go 1.25+
+- Go 1.26.6 or later
 - Git
 - Make
 - Node.js for workflow policy tests; local runs skip these tests when Node.js
