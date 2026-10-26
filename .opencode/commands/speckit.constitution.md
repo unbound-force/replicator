@@ -148,3 +148,12 @@ Check if `.specify/extensions.yml` exists in the project root.
     EXECUTE_COMMAND: {command}
     ```
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+## Guardrails
+
+- This command updates the project constitution and propagates changes to dependent templates.
+- The ONLY files this command may write are:
+  - `.specify/memory/constitution.md`
+  - `.specify/templates/*-template.md` (consistency propagation)
+- Do NOT modify source code, test files, or any files outside the `.specify/` directory.
+- Consult the project constitution (`.specify/memory/constitution.md`) and retrieve prior context via Dewey (`dewey_semantic_search`) before amending governance documents.

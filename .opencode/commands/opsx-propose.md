@@ -38,6 +38,13 @@ When ready to implement, run /opsx-apply
     git checkout -b opsx/<name>
     ```
 
+    **Check for uncommitted changes**
+
+    Before creating or switching branches, run `git status --short`. If there are uncommitted changes (staged, unstaged, or untracked files that appear related to work):
+    - **STOP** and ask the user for confirmation before switching branches. Show what uncommitted changes exist and warn that switching branches with a dirty working tree may cause changes to be applied to the wrong branch.
+    - If the user confirms, proceed. If not, abort.
+    - Exception: if the user explicitly requested a new change, this still requires confirmation -- never silently switch branches with uncommitted work.
+
     **Guard**: Before creating the branch, check the current branch:
     - If already on `opsx/<name>` (exact match): skip branch creation, proceed.
     - If on a different `opsx/*` branch: **STOP** with error: "Already on branch `opsx/<other>` -- finish or archive that change first."

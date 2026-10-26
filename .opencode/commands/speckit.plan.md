@@ -54,6 +54,10 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
+**STOP HERE. Do NOT proceed to implementation.**
+
+Your job is done. Report the results and prompt the user. The user will invoke a separate command (`/speckit.implement`, `/uf.unleash`, or `/uf.cobalt-crush`) when they are ready to implement.
+
 1. **Setup**: Run `.specify/scripts/bash/setup-plan.sh --json` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
 2. **Load context**: Read FEATURE_SPEC and `.specify/memory/constitution.md`. Load IMPL_PLAN template (already copied).
@@ -166,3 +170,13 @@ Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generate
 - [ ] Plan workflow executed and design artifacts generated
 - [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
 - [ ] Completion reported to user with branch, plan path, and generated artifacts
+
+## Guardrails
+
+- **NEVER modify source code** — this command updates spec artifacts ONLY. Implementation changes belong in `/speckit.implement`, `/uf.unleash`, or `/uf.cobalt-crush`.
+- **NEVER modify test files, Go source, Markdown agents, convention packs, or config files** outside the `specs/NNN-*/` feature directory.
+- The ONLY files this command may write are:
+  - `FEATURE_SPEC` (the spec.md file)
+  - Files within `FEATURE_DIR` (spec artifacts: plan.md, tasks.md, research.md, data-model.md, quickstart.md, contracts/, checklists/)
+- The user needs to review the plan before implementation begins. Implementing without review defeats the purpose of the spec-first workflow.
+- Consult the project constitution (`.specify/memory/constitution.md`) and retrieve prior context via Dewey (`dewey_semantic_search`) before writing spec artifacts.
