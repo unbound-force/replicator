@@ -46,3 +46,6 @@ node_modules/
 .gaze/
 
 *.log
+
+# opencode run logs written under an unresolved path (.opencode/undefined/)
+.opencode/undefined/
