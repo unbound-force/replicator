@@ -47,9 +47,9 @@ func TestScaffold_FreshDirectory(t *testing.T) {
 		t.Fatalf("Scaffold: %v", err)
 	}
 
-	// Expect 15 files: 5 commands + 7 skills + 3 agents.
-	if len(results) != 15 {
-		t.Errorf("Scaffold returned %d results, want 15", len(results))
+	// Expect 14 files: 5 commands + 6 skills + 3 agents.
+	if len(results) != 14 {
+		t.Errorf("Scaffold returned %d results, want 14", len(results))
 		for _, r := range results {
 			t.Logf("  %s: %s", r.Action, r.Path)
 		}
@@ -69,7 +69,6 @@ func TestScaffold_FreshDirectory(t *testing.T) {
 		".opencode/commands/inbox.md",
 		".opencode/commands/forge-status.md",
 		".opencode/commands/handoff.md",
-		".opencode/skills/always-on-guidance/SKILL.md",
 		".opencode/skills/forge-coordination/SKILL.md",
 		".opencode/skills/replicator-cli/SKILL.md",
 		".opencode/skills/testing-patterns/SKILL.md",
@@ -249,8 +248,8 @@ func TestScaffold_FileCount(t *testing.T) {
 	if commands != 5 {
 		t.Errorf("commands = %d, want 5", commands)
 	}
-	if skills != 7 {
-		t.Errorf("skills = %d, want 7", skills)
+	if skills != 6 {
+		t.Errorf("skills = %d, want 6", skills)
 	}
 	if agents != 3 {
 		t.Errorf("agents = %d, want 3", agents)
@@ -1023,52 +1022,6 @@ func TestForgeCoordinationSkill_StructuralHardening(t *testing.T) {
 	}
 }
 
-func TestAlwaysOnGuidance_StructuralHardening(t *testing.T) {
-	data, err := content.ReadFile("content/skills/always-on-guidance/SKILL.md")
-	if err != nil {
-		t.Fatalf("read embedded always-on-guidance/SKILL.md: %v", err)
-	}
-	text := string(data)
-
-	// (1) Tool Usage Discipline section exists.
-	toolUsageIdx := strings.Index(text, "## Tool Usage Discipline")
-	if toolUsageIdx < 0 {
-		t.Error("always-on-guidance: missing '## Tool Usage Discipline' section")
-	}
-
-	// (2) Force push prohibition lives in Git Discipline (the UF upgrade
-	// folded Critical Safety into Git Discipline; the rule itself must
-	// survive any restructure).
-	gitIdx := strings.Index(text, "## Git Discipline")
-	if gitIdx < 0 {
-		t.Error("always-on-guidance: missing '## Git Discipline' section")
-	} else if !strings.Contains(strings.ToLower(text[gitIdx:]), "never force push to main") {
-		t.Error("always-on-guidance: Git Discipline must prohibit force push to main")
-	}
-
-	// (3) Dewey retrieval discipline present in Tool Usage (hivemind_find is deprecated).
-	if toolUsageIdx >= 0 && !strings.Contains(text[toolUsageIdx:], "dewey_semantic_search") {
-		t.Error("always-on-guidance: Tool Usage Discipline must mention dewey_semantic_search")
-	}
-
-	// (4) Tool Output Overflow Recovery section exists (UF upgrade addition).
-	if !strings.Contains(text, "## Tool Output Overflow Recovery") {
-		t.Error("always-on-guidance: missing '## Tool Output Overflow Recovery' section")
-	}
-
-	// (5) Core discipline rules survived the section flattening.
-	for _, rule := range []string{
-		"db.OpenMemory()",
-		"t.TempDir()",
-		"fmt.Errorf(",
-		"errors.Is",
-	} {
-		if !strings.Contains(text, rule) {
-			t.Errorf("always-on-guidance: missing core rule %q", rule)
-		}
-	}
-}
-
 func TestForgeGlobal_StructuralHardening(t *testing.T) {
 	data, err := content.ReadFile("content/skills/forge-global/SKILL.md")
 	if err != nil {
@@ -1133,7 +1086,6 @@ func TestSkillFiles_DriftDetection(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 
 	skills := []string{
-		"always-on-guidance",
 		"forge-global",
 	}
 
@@ -1354,8 +1306,8 @@ func TestSkillTemplates_HaveNameField(t *testing.T) {
 
 		text := string(data)
 
-		// Extract directory name (e.g., "always-on-guidance" from
-		// "content/skills/always-on-guidance/SKILL.md").
+		// Extract directory name (e.g., "forge-coordination" from
+		// "content/skills/forge-coordination/SKILL.md").
 		dir := filepath.Dir(path)
 		dirName := filepath.Base(dir)
 
@@ -1390,7 +1342,7 @@ func TestSkillTemplates_HaveNameField(t *testing.T) {
 	if err != nil {
 		t.Fatalf("walk embedded skills: %v", err)
 	}
-	if checked != 7 {
-		t.Errorf("checked %d skill templates, want 7", checked)
+	if checked != 6 {
+		t.Errorf("checked %d skill templates, want 6", checked)
 	}
 }
