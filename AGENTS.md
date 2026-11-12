@@ -490,11 +490,10 @@ Run `make check` to confirm drift detection tests pass.
 
 ### Mirrored File Pairs
 
-**Skills** (7 files):
+**Skills** (6 files):
 
 | Scaffolded Path | Embedded Path |
 |----------------|---------------|
-| `.opencode/skills/always-on-guidance/SKILL.md` | `internal/agentkit/content/skills/always-on-guidance/SKILL.md` |
 | `.opencode/skills/forge-coordination/SKILL.md` | `internal/agentkit/content/skills/forge-coordination/SKILL.md` |
 | `.opencode/skills/forge-global/SKILL.md` | `internal/agentkit/content/skills/forge-global/SKILL.md` |
 | `.opencode/skills/learning-systems/SKILL.md` | `internal/agentkit/content/skills/learning-systems/SKILL.md` |
@@ -522,7 +521,8 @@ Run `make check` to confirm drift detection tests pass.
 
 Not all `.opencode/` files have embedded copies. Files
 that appear only in `.opencode/` (e.g., Divisor agents,
-Speckit commands, OpenSpec skills) are scaffolded by the
+Speckit commands, OpenSpec skills, the uf-owned
+`always-on-guidance` skill) are scaffolded by the
 Unbound Force CLI, not by `replicator init`, and are not
 subject to drift detection.
 
@@ -530,10 +530,12 @@ subject to drift detection.
 
 `TestSkillFiles_DriftDetection` in
 `internal/agentkit/agentkit_test.go` enforces byte
-parity for `always-on-guidance` and `forge-global`
-skills. `TestForgeCoordinationSkill_StructuralHardening`
-checks `forge-coordination` inline. See issue #70 for
-planned expansion of drift detection coverage to all 15
+parity for the `forge-global` skill.
+`TestForgeCoordinationSkill_StructuralHardening`
+checks `forge-coordination` inline. The
+`always-on-guidance` skill is uf-owned and is not
+embedded. See issue #70 for
+planned expansion of drift detection coverage to all 14
 mirrored files. If these test names or their coverage
 scope change, update this section to match.
 
@@ -542,12 +544,12 @@ scope change, update this section to match.
 When a PR modifies a file in either column of the tables
 above, verify the corresponding copy is updated. If only
 one copy is changed, the drift detection tests will fail
-in CI (`make check`) for the three skills currently
+in CI (`make check`) for the two skills currently
 covered (see Test Coverage above). For the remaining
 pairs, run `replicator init` (or the drift tests) instead
 of manual byte comparison -- smart-sync updates drifted
 copies to the embedded content; commit the synced files.
-Issue #70 tracks expanding test coverage to all 15
+Issue #70 tracks expanding test coverage to all 14
 mirrored pairs.
 
 ## Credits

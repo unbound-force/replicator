@@ -64,14 +64,13 @@ func TestRunInit_FreshDirectory(t *testing.T) {
 		t.Errorf("cells.json content = %q, want %q", string(data), "[]\n")
 	}
 
-	// Verify agent kit files created (16 total: 1 cells.json + 15 agent kit).
+	// Verify agent kit files created (15 total: 1 cells.json + 14 agent kit).
 	agentKitFiles := []string{
 		".opencode/commands/forge.md",
 		".opencode/commands/org.md",
 		".opencode/commands/inbox.md",
 		".opencode/commands/forge-status.md",
 		".opencode/commands/handoff.md",
-		".opencode/skills/always-on-guidance/SKILL.md",
 		".opencode/skills/forge-coordination/SKILL.md",
 		".opencode/skills/replicator-cli/SKILL.md",
 		".opencode/skills/testing-patterns/SKILL.md",
