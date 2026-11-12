@@ -89,6 +89,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   - Spec: `openspec/changes/init-smart-sync/specs/agentkit-scaffolding/spec.md`
 
 ### Security
+- Go bumped to 1.26.11 to clear GO-2026-6859 (HTTP/1 server crash due to
+  MaxBytesReader header race in `net/http`). This is a patch bump inside the
+  1.26.9-or-later baseline established for issue #131; CI reads the toolchain
+  from `go.mod`, so no workflow change is needed.
 - Minimum Go toolchain raised to 1.26.9 to resolve reachable standard-library
   vulnerabilities reported in issue #131.
   - Spec: `openspec/changes/fix-go-toolchain-vulnerabilities/specs/go-toolchain-security/spec.md`
