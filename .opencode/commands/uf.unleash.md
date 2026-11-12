@@ -2,9 +2,10 @@
 description: >
   Run the full Speckit, OpenSpec, or quick change pipeline
   autonomously: route to a workflow tier when no spec exists,
-  clarify ambiguities with Dewey, generate plan and tasks,
-  review specs, implement with parallel Swarm workers,
-  review code, store learnings, and present demo
+  clarify ambiguities with Dewey, then ask the human
+  interactively for questions Dewey cannot answer, generate
+  plan and tasks, review specs, implement with parallel Swarm
+  workers, review code, store learnings, and present demo
   instructions. Exits to the human only when it genuinely
   needs human judgment.
 ---
@@ -426,18 +427,91 @@ and proceed to Step 2 (Plan).
      to the unanswerable list.
 
 3. **If Dewey is NOT available**: add ALL questions to
-   the unanswerable list. Note:
-   > "Dewey not available -- all clarification questions
-   > require human input."
+   the unanswerable list as ask-gate candidates -- the
+   gate asks through the question tool, which is
+   independent of Dewey, so the gate still runs. These
+   questions flow directly to the clarify exit below
+   only when the question tool is unavailable in the
+   session. Note:
+   > "Dewey not available -- clarification questions
+   > route to the interactive ask gate, exiting for
+   > human input only when the question tool is
+   > unavailable."
 
-**After processing all questions**:
+**After the per-question Dewey loop -- the interactive
+clarify ask gate**: when the unanswerable list is NOT
+empty and the question tool is available in the
+session, ask the human every unanswerable question
+before taking the clarify exit. The gate is required
+human input within Step 1 -- the same class of
+mid-pipeline interaction as the Step 4 per-finding
+spec review decision gate -- not a between-step
+confirmation pause, and it has no question cap: every
+unanswerable question MUST be resolved or deferred
+before Step 1 completes. Questions Dewey answered
+never reach the gate -- their silent auto-resolution
+without human confirmation is preserved.
 
-- If the unanswerable list is empty: all questions were
-  auto-resolved. Announce how many were resolved and
-  proceed to Step 2 (Plan).
-- If the unanswerable list is NOT empty: **EXIT** by
-  calling `format_unleash_exit` with variant `clarify`
-  and the unanswerable questions, each passed as
+For each question on the unanswerable list:
+
+1. Ask the human through a single
+   **question tool call** carrying the question text
+   and its surrounding spec context -- the `context`
+   lines the scan returned -- so the human sees the
+   spec's own framing of the question. Questions MUST
+   NOT be batched: exactly one question per call, and
+   the next question MUST NOT be presented until the
+   previous question's response has been received.
+2. Formulate the ask:
+   - SHOULD present 2-5 mutually exclusive answer
+     options drawn from the question's own enumerated
+     alternatives when the question text enumerates
+     them.
+   - MUST list the spec's stated working default
+     first, labeled "(Recommended)", when the spec
+     states one.
+   - MUST keep the custom free-form answer option
+     enabled for answers outside the enumerated
+     options.
+   - MUST include a defer option in every ask.
+3. Apply the human's response:
+   - A chosen option or a custom free-form answer:
+     resolve the question by calling
+     `resolve_clarification` with `resolved_by:
+     "human"`, omitting `source` entirely (the ask
+     gate itself is the answer's provenance):
+
+     ```
+     resolve_clarification
+       feature_dir: FEATURE_DIR
+       question: [the question exactly as scanned]
+       answer: [the chosen or custom answer]
+       resolved_by: "human"
+     ```
+
+     On failure, emit the envelope's error and
+     **STOP**.
+   - Defer: make no resolve call. The question stays
+     on the unanswerable list and flows to the clarify
+     exit below.
+
+**If the question tool is NOT available** in the
+session: keep today's behavior -- no ask is attempted.
+All unanswerable questions flow directly to the
+clarify exit below.
+
+**After processing**:
+
+- Announce the counts: how many questions were
+  auto-resolved by Dewey, how many were human-answered
+  at the ask gate, and how many were deferred.
+- If the unanswerable list is empty: every question
+  was resolved. Proceed to Step 2 (Plan).
+- If questions remain on the unanswerable list --
+  deferred at the ask gate, or unasked because the
+  question tool was unavailable: **EXIT** by calling
+  `format_unleash_exit` with variant `clarify` and
+  the remaining questions, each passed as
   `{question, context}` exactly as scanned:
 
   ```
@@ -603,20 +677,73 @@ sections instead of embedding their text.
    `plan_entries`, `session_metadata` (command, mode,
    full, input context, change profile, plan,
    coverage), and the plan limits (`max_parallel_runs`,
-   `budget_usd`, `per_run_timeout_ms`). Pass the spec
-   artifacts as `review_context`. Then call
+   `budget_usd`; omit `per_run_timeout_ms` so each run derives
+   its window from the matrix limit and the dispatched work,
+   with explicit values still winning). Pass the spec
+   artifacts as `review_context`. The tool returns a one-line
+   counts summary — `dispatch_review_runs: <status>
+   (correlation_id <id>) — <completed> completed, <failed>
+   failed, <skipped> skipped, <findings> findings, <proposals>
+   proposals`. A non-ok summary also ends with ` — error:
+   <message> (retryable: <bool>)`, the failure message collapsed
+   to one line and cut to at most 512 characters including the
+   ellipsis, the retryable marker omitted when unknown. Capture
+   the `correlation_id` reported in that
+   one-line summary and pass it as `correlation_id` on every
+   subsequent consolidation call for this dispatch. Step 4
+   and Step 6 are separate dispatches with separate
+   `correlation_id` values — each dispatch's ID threads only
+   to its own consolidation calls. Forward it unconditionally,
+   never conditioned on in-process session-map state; the
+   machine-readable tool metadata carries the same ID as a
+   secondary channel for harnesses that surface it. Then call
    `consolidate_dispatch` exactly once per finalization
    attempt with provenance: branch, 40-character head
-   SHA, and `workflow_id: "uf.review-council"`.
+   SHA, `workflow_id: "uf.review-council"`, and the captured
+   `correlation_id` from this dispatch.
+
+   The dispatch selects the diff delivery mode per the
+   cited council protocol: inline at or below 1500 diff
+   lines, manifest delivery (diff manifest plus
+   on-demand `read_diff_chunk` retrieval and the
+   `**Files Reviewed**:` attestation) strictly above —
+   below-threshold prompt assembly is unchanged.
 
 **Processing results**:
 
-- If the verdict is APPROVE or APPROVE WITH ADVISORIES:
-  record any advisories for the final report and
-  proceed to Step 5 (Implement) — approving verdicts
-  never trigger the decision gate below.
+- Read the authoritative full data once from the persisted
+  artifact through `read_dispatch_artifact` (never the
+  file-read tool, whose line limit cuts long artifact lines):
+  call it with the finalization result's `correlation_id` and
+  `section` `findings`, `advisories`, then `proposals`,
+  repeating each with `offset: <next_offset>` until
+  `next_offset` is null, and fail closed if any call returns
+  `status: "error"`. The compact result carries the outcome,
+  the scalar `review_verdict`, and run counts, never the
+  projection.
+- Store the dispatch's lessons from the `proposals` section:
+  for each entry (full text, already merged across personas by
+  `consolidate_dispatch`), call `dewey_store_learning` once
+  with its `information`, `tag`, and `category`. An empty
+  section means no lesson was submitted, unless the compact
+  result's `proposals` preview is non-empty: then the loaded
+  plugin predates durable proposals, so store nothing and
+  report the previewed lessons as stranded. Never store from
+  the preview. Skip storage when the finalization failed or
+  Dewey is unavailable: store no lesson and report the
+  proposals as stranded in the dispatch store.
+- Parse the entire finalization response as one JSON
+  object first. If it parses, it is complete — ignore any
+  truncation-shaped text inside it. If it does not parse,
+  the host truncated it (typically a truncation notice
+  such as `[... truncated ... saved to: /path ...]`): fail
+  closed and do not read the saved file.
+- If `operation_verdict` is APPROVE or APPROVE WITH
+  ADVISORIES: record the artifact's advisories for the final
+  report and proceed to Step 5 (Implement) — approving
+  verdicts never trigger the decision gate below.
 
-- If the verdict is REQUEST CHANGES: present the
+- If `operation_verdict` is REQUEST CHANGES: present the
   per-finding spec review decision gate. The council's
   "Spec Review Mode" MANDATORY GATE in
   `.opencode/commands/uf.review-council.md` governs the
@@ -682,7 +809,10 @@ sections instead of embedding their text.
   included reviewer (not just failing or
   content-affected ones), reusing a single
   sibling-evidence acquisition across the iteration.
-  Keep the iteration counter. Each re-run verdict is
+  Each re-dispatch reports a fresh `correlation_id` in
+  its one-line counts summary — capture it and pass it
+  on every `consolidate_dispatch` call for that
+  re-dispatch. Keep the iteration counter. Each re-run verdict is
   processed through these same rules -- the gate
   re-presents on every REQUEST CHANGES verdict. Cap at
   3 iterations: if REQUEST CHANGES persists to a fourth
@@ -765,7 +895,7 @@ from the pre-flight gate below):
       (docs authorship is judgment work)]
     skill: [repo skill or script reference that performs the
       change end-to-end -- only when deterministic]
-    skill_absent_reason: [what was searched and what was
+    skill_absent_reason: [<=512 chars: what was searched and what was
       found -- only when deterministic and no repo skill or
       script applies; never together with skill]
     checkpoint_step: "implement"
@@ -887,9 +1017,20 @@ its Local Tool Detection phase to discover additional
    - `skill`: a repo skill name or repo-relative script path
      that performs the work end-to-end. Valid only with a
      deterministic classification; mutually exclusive with
+     `skill_absent_reason`. A value without `/` resolves as a
+     repo skill name first, then as a repo-root file
+     (`Makefile`, `build-all.sh`); a value with `/` is a
+     repo-relative path (`./Makefile` names a root file
+     explicitly). Make targets and commands such as
+     `make plugin-test` are not valid `skill` values:
+     reference the file that defines them (`Makefile`) and
+     name the target in `prompt`, or record the command in
      `skill_absent_reason`.
    - `skill_absent_reason`: a substantive reason stating
-     what was searched and what was found. Valid only with a
+     what was searched and what was found, in one or two
+     sentences of at most 512 characters (longer values
+     fail with `INVALID_INPUT`; name the searched
+     locations, not their contents). Valid only with a
      deterministic classification; mutually exclusive with
      `skill`.
 
@@ -903,11 +1044,42 @@ its Local Tool Detection phase to discover additional
    procedure -- the delegation names the reference and does
    not restate the procedure. The classification, resolved
    reference, and any recorded reason are written to the
-   checkpoint data and success envelope, so every delegation
-   is auditable without reconstructing prompts. Swarm-path
+   checkpoint data and success envelope, so every delegation is
+   auditable without reconstructing prompts. Swarm-path
    `[P]` delegations carry the same classification through
    the spawn tool's `task_classification` parameter (see
    parallel execution below).
+
+**Model-selection parameters for delegated calls**
+(model-matrix-delegation UF-FR-001): pass `pack` on an
+`uf_delegate_command` implement delegation whenever the task
+clearly names a convention pack -- a Go task passes `pack:
+"go"`, a TypeScript task `pack: "typescript"`,
+spec-authoring work `pack: "meta-prompt"`. A task with no
+clearly named pack omits the parameter: the classifier
+cascade (MM-FR-005) derives the selection. The selection
+parameters are independent of the classification contract
+above -- they govern which model the child session runs on,
+not skill enforcement. Parameter contract and precedence
+order (MM-FR-003):
+   - `model`: explicit provider/model identity (with optional
+     `variant`); wins the chain outright, skipping matrix
+     resolution and host introspection.
+   - `profile`: matrix capability name; resolves the
+     profile's model and pack through `.uf/model-matrix.yaml`
+     when configured.
+   - `pack`: UF convention pack name; double duty -- resolves
+     the mapped profile's model AND renders the tool-authored
+     directive instructing the child to load
+     `.opencode/uf/packs/<pack>.md` before writing.
+   - Precedence: explicit `model` > `profile` > `pack` >
+     agent pin > task-kind default > classifier cascade >
+     host model.
+
+   Never reconstruct, inline, or paraphrase pack content in a
+   delegation prompt -- the pack directive is tool-rendered
+   by `uf_delegate_command` from a fixed template; the
+   orchestrator only ever names the pack.
 
 **Build/test fix loop**: a failing check at a blocking
 gate is implement work the agent owns, not a human
@@ -954,7 +1126,7 @@ For each iteration (up to 3 total):
        the usual case for diagnosing a broken test]
      skill: [repo skill or script reference that performs
        the fix end-to-end -- only when deterministic]
-     skill_absent_reason: [what was searched and what was
+     skill_absent_reason: [<=512 chars: what was searched and what was
        found -- only when deterministic and no repo skill
        or script applies; never together with skill]
      feature_dir: FEATURE_DIR
@@ -1033,7 +1205,7 @@ its spent budget the same way, from its budget-only
        deterministic or judgment, per the step above]
      skill: [repo skill or script reference that performs
        the task end-to-end -- only when deterministic]
-     skill_absent_reason: [what was searched and what was
+     skill_absent_reason: [<=512 chars: what was searched and what was
        found -- only when deterministic and no repo skill or
        script applies; never together with skill]
      feature_dir: FEATURE_DIR
@@ -1089,8 +1261,8 @@ its spent budget the same way, from its budget-only
             deterministic or judgment, per the step above]
           skill: [repo skill or script reference that performs
             the task end-to-end -- only when deterministic]
-          skill_absent_reason: [what was searched and what was
-            found -- only when deterministic and no repo skill or
+          skill_absent_reason: [<=512 chars: what was searched and what
+            was found -- only when deterministic and no repo skill or
             script applies; never together with skill]
           files: [files from the task]
           project_path: [the worktree path]
@@ -1453,23 +1625,76 @@ text.
       `plan_entries`, `session_metadata` (command, mode,
       full, input context, change profile, plan,
       coverage), and the plan limits (`max_parallel_runs`,
-      `budget_usd`, `per_run_timeout_ms`). Pass the
+      `budget_usd`; omit `per_run_timeout_ms` so each run
+      derives its window from the matrix limit and the
+      dispatched work, with explicit values still winning).
+      Pass the
       soft-gate results as `pre_flight_results` (verdict,
-      causality classifications, baseline method). Then
+      causality classifications, baseline method). The
+      tool returns a one-line counts summary —
+      `dispatch_review_runs: <status> (correlation_id <id>)
+      — <completed> completed, <failed> failed, <skipped>
+      skipped, <findings> findings, <proposals> proposals`.
+      A non-ok summary also ends with ` — error: <message>
+      (retryable: <bool>)`, the failure message collapsed to one
+      line and cut to at most 512 characters including the ellipsis,
+      the retryable marker omitted when unknown. Capture the
+      `correlation_id` reported in that
+      one-line summary and pass it as `correlation_id` on
+      every subsequent consolidation call for this
+      dispatch. Step 4 and Step 6 are separate dispatches
+      with separate `correlation_id` values, and each
+      dispatch's ID threads only to its own consolidation
+      calls. Forward it unconditionally, never conditioned
+      on in-process session-map state; the machine-readable
+      tool metadata carries the same ID as a secondary
+      channel for harnesses that surface it. Then
       call `consolidate_dispatch` exactly once per
       finalization attempt with provenance: branch,
-      40-character head SHA, and
-      `workflow_id: "uf.review-council"`.
+      40-character head SHA,
+      `workflow_id: "uf.review-council"`, and the
+      captured `correlation_id` from this dispatch.
+
+   The dispatch selects the diff delivery mode per the
+   cited council protocol: inline at or below 1500 diff
+   lines, manifest delivery (diff manifest plus
+   on-demand `read_diff_chunk` retrieval and the
+   `**Files Reviewed**:` attestation) strictly above —
+   below-threshold prompt assembly is unchanged.
+
+Read the authoritative full data once from the persisted artifact
+through `read_dispatch_artifact` (never the file-read tool, whose line
+limit cuts long artifact lines): call it with the finalization result's
+`correlation_id` and `section` `findings`, `advisories`, then
+`proposals`, repeating each with `offset: <next_offset>` until
+`next_offset` is null, and fail closed if any call returns
+`status: "error"`. The compact result carries the outcome, the scalar
+`review_verdict`, and run counts, never the projection. Store the
+dispatch's lessons from the `proposals` section: for each entry (full
+text, already merged across personas by `consolidate_dispatch`), call
+`dewey_store_learning` once with its `information`, `tag`, and
+`category`. An empty section means no lesson was submitted, unless the
+compact result's `proposals` preview is non-empty: then the loaded
+plugin predates durable proposals, so store nothing and report the
+previewed lessons as stranded. Never store from the preview. Skip
+storage when the finalization failed or Dewey is unavailable: store no
+lesson and report the proposals as stranded in the dispatch store.
+
+Parse the entire finalization response as one JSON object first. If it
+parses, it is complete — ignore any truncation-shaped text inside it. If
+it does not parse, the host truncated it (typically a truncation notice
+such as `[... truncated ... saved to: /path ...]`): fail closed and do
+not read the saved file.
 
 **Processing results**:
 
-- If the verdict is APPROVE or APPROVE WITH ADVISORIES
+- If `operation_verdict` is APPROVE or APPROVE WITH ADVISORIES
   (at least one successful reviewer assessment is
   required for a valid verdict): record any advisories
   for the final report and proceed to Step 7
   (Retrospective).
 
-- If the verdict is REQUEST CHANGES: enter the fix loop.
+- If `operation_verdict` is REQUEST CHANGES: enter the fix loop.
   For each iteration (up to 3 total):
   a. Address the findings by making code fixes --
      delegate the code-fix application to the
@@ -1488,7 +1713,7 @@ text.
          applying prose findings, which is authorship work]
        skill: [repo skill or script reference that performs
          the fix end-to-end -- only when deterministic]
-       skill_absent_reason: [what was searched and what was
+       skill_absent_reason: [<=512 chars: what was searched and what was
          found -- only when deterministic and no repo skill
          or script applies; never together with skill]
        feature_dir: FEATURE_DIR
@@ -1505,7 +1730,11 @@ text.
      ones), reusing a single sibling-evidence
      acquisition across the iteration, and again
      passing fresh `pre_flight_results` from a re-run
-     of the soft gate. Keep the iteration counter.
+     of the soft gate. Each re-dispatch reports a fresh
+     `correlation_id` in its one-line counts summary —
+     capture it and pass it on every
+     `consolidate_dispatch` call for that re-dispatch.
+     Keep the iteration counter.
   c. If the verdict is APPROVE or APPROVE WITH
      ADVISORIES: proceed to Step 7 (Retrospective).
 
@@ -1622,10 +1851,11 @@ memory.
    lost.
 
 > POLICY NOTE: Learnings stored via `dewey_store_learning`
-> produce files (`.uf/dewey/learnings/*.md`,
-> `.uf/dewey/compiled/*.md`) that are part of the feature
-> PR scope and MUST be committed on the feature branch.
-> See the Commit scope rule in `AGENTS.md`.
+> produce files under `.uf/dewey/learnings/` that MUST NOT
+> be committed on the feature branch. They stay untracked
+> and reach `main` through a separate
+> `chore/dewey-learnings-*` PR. See the Commit scope rule in
+> `AGENTS.md`.
 
 Proceed immediately to Step 8 (Demo). Do NOT ask for
 confirmation.
@@ -1740,19 +1970,26 @@ retains its no-artifact fallback.
 
 - **NEVER pause between steps to ask for human
   confirmation** -- proceed immediately from one step to
-  the next. The single exception is the per-finding spec
-  review decision gate in Step 4: when a spec review
-  returns REQUEST CHANGES, each finding's question tool
-  MUST be presented and answered before any spec
-  artifact is modified or any finding is waived. That
-  gate is the only legitimate mid-pipeline human
-  interaction. The valid reasons to exit the pipeline
-  are: unanswerable clarification questions, unresolved
-  spec findings after the per-finding gate (pause choice
-  or iteration cap), build/test failures that persist
-  after the fix loop's 3 iterations, merge conflicts,
-  and 3 review iterations exhausted. All other
-  transitions are autonomous.
+  the next. The only legitimate mid-pipeline human
+  interactions are the interactive clarify ask gate in
+  Step 1 (Speckit) and the per-finding spec review
+  decision gate in Step 4 -- required human input
+  within a step, not between-step confirmations. At
+  the ask gate, every question Dewey cannot answer
+  MUST be asked through the question tool, one at a
+  time, before the clarify exit is taken. At the
+  Step 4 gate, when a spec review returns REQUEST
+  CHANGES, each finding's question tool MUST be
+  presented and answered before any spec artifact is
+  modified or any finding is waived. The valid
+  reasons to exit the pipeline are: deferred clarify
+  questions (or unasked when the question tool is
+  unavailable), unresolved spec findings after the
+  per-finding gate (pause choice or iteration cap),
+  build/test failures that persist after the fix loop's
+  3 iterations, merge conflicts, and 3 review
+  iterations exhausted. All other transitions are
+  autonomous.
 - **NEVER modify content on `main`** -- tier routing may
   start on main, but the route decision tool creates the
   `quick/<name>` branch and the speckit/openspec entry

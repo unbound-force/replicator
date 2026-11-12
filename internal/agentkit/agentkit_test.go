@@ -1030,62 +1030,41 @@ func TestAlwaysOnGuidance_StructuralHardening(t *testing.T) {
 	}
 	text := string(data)
 
-	// (1) Critical Safety section exists and appears before Tool Usage Discipline.
-	safetyIdx := strings.Index(text, "## Critical Safety")
-	if safetyIdx < 0 {
-		t.Error("always-on-guidance: missing '## Critical Safety' section")
-	}
+	// (1) Tool Usage Discipline section exists.
 	toolUsageIdx := strings.Index(text, "## Tool Usage Discipline")
 	if toolUsageIdx < 0 {
 		t.Error("always-on-guidance: missing '## Tool Usage Discipline' section")
 	}
-	if safetyIdx >= 0 && toolUsageIdx >= 0 && safetyIdx >= toolUsageIdx {
-		t.Error("always-on-guidance: '## Critical Safety' must appear before '## Tool Usage Discipline'")
+
+	// (2) Force push prohibition lives in Git Discipline (the UF upgrade
+	// folded Critical Safety into Git Discipline; the rule itself must
+	// survive any restructure).
+	gitIdx := strings.Index(text, "## Git Discipline")
+	if gitIdx < 0 {
+		t.Error("always-on-guidance: missing '## Git Discipline' section")
+	} else if !strings.Contains(strings.ToLower(text[gitIdx:]), "never force push to main") {
+		t.Error("always-on-guidance: Git Discipline must prohibit force push to main")
 	}
 
-	// (2) Force push rule uses RFC 2119 uppercase keyword (DR-002).
-	if !strings.Contains(text, "NEVER force push") {
-		t.Error("always-on-guidance: force push rule must use RFC 2119 keyword 'NEVER'")
+	// (3) Dewey retrieval discipline present in Tool Usage (hivemind_find is deprecated).
+	if toolUsageIdx >= 0 && !strings.Contains(text[toolUsageIdx:], "dewey_semantic_search") {
+		t.Error("always-on-guidance: Tool Usage Discipline must mention dewey_semantic_search")
 	}
 
-	// (3) hivemind_find is the first item in Tool Usage Discipline section.
-	if toolUsageIdx >= 0 {
-		afterToolUsage := text[toolUsageIdx:]
-		firstDashIdx := strings.Index(afterToolUsage, "\n- ")
-		if firstDashIdx < 0 {
-			t.Error("always-on-guidance: no list items in Tool Usage Discipline")
-		} else {
-			// Extract the first list item line.
-			firstItemStart := firstDashIdx + 3 // skip "\n- "
-			firstItemEnd := strings.Index(afterToolUsage[firstItemStart:], "\n")
-			if firstItemEnd < 0 {
-				firstItemEnd = len(afterToolUsage) - firstItemStart
-			}
-			firstItem := afterToolUsage[firstItemStart : firstItemStart+firstItemEnd]
-			if !strings.Contains(firstItem, "hivemind_find") {
-				t.Errorf("always-on-guidance: first Tool Usage item should mention hivemind_find, got %q", firstItem)
-			}
-		}
+	// (4) Tool Output Overflow Recovery section exists (UF upgrade addition).
+	if !strings.Contains(text, "## Tool Output Overflow Recovery") {
+		t.Error("always-on-guidance: missing '## Tool Output Overflow Recovery' section")
 	}
 
-	// (4) Code Quality split into sub-headers.
-	for _, sub := range []string{"### Structure", "### Clarity"} {
-		if !strings.Contains(text, sub) {
-			t.Errorf("always-on-guidance: missing Code Quality sub-header %q", sub)
-		}
-	}
-
-	// (5) Testing split into sub-headers.
-	for _, sub := range []string{"### Test Infrastructure", "### Test Practice"} {
-		if !strings.Contains(text, sub) {
-			t.Errorf("always-on-guidance: missing Testing sub-header %q", sub)
-		}
-	}
-
-	// (6) Error Handling split into sub-headers.
-	for _, sub := range []string{"### Error Propagation", "### Error Coverage"} {
-		if !strings.Contains(text, sub) {
-			t.Errorf("always-on-guidance: missing Error Handling sub-header %q", sub)
+	// (5) Core discipline rules survived the section flattening.
+	for _, rule := range []string{
+		"db.OpenMemory()",
+		"t.TempDir()",
+		"fmt.Errorf(",
+		"errors.Is",
+	} {
+		if !strings.Contains(text, rule) {
+			t.Errorf("always-on-guidance: missing core rule %q", rule)
 		}
 	}
 }
