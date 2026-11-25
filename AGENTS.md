@@ -106,15 +106,24 @@ non-negotiable.
 - **CI Parity Gate**: Before marking any task complete, run
   the CI-equivalent checks locally. Read
   `.github/workflows/` for the exact commands -- do not
-  rely on memory. Any failure blocks the task. The CI
-  `Build and Test` check includes `govulncheck` for
-  vulnerability scanning of Go dependencies. The
-  `Standardized CI / Run linters` check runs MegaLinter
-  (via `complytime/org-infra` reusable workflow) with
-  linters configured in `.mega-linter.yml` and PR title
-  validation. Note: MegaLinter runs in CI only; there is
-  no local equivalent. Use `mega-linter-runner` if local
-  linting is needed (requires Docker).
+  rely on memory. Any failure blocks the task. Branch
+  protection requires `CI OK` (an aggregate in `ci.yml`
+  that fails when any needed job failed or was cancelled)
+  and `Standardized CI / Run linters`. Pull requests
+  changing only `.md` files under `.uf/dewey/learnings/` skip
+  the `Build and Test` job (a `changes` job in `ci.yml`
+  detects this, counts symlinks, submodules and empty
+  diffs as code, and fails closed on diff errors); the
+  Standardized CI check is never skipped, so secret
+  scanning and PR title validation run on every PR; pushes
+  to `main` always run everything. The `Build and Test` job includes
+  `govulncheck` for vulnerability scanning of Go
+  dependencies. The `Standardized CI / Run linters` check
+  runs MegaLinter (via `complytime/org-infra` reusable
+  workflow) with linters configured in `.mega-linter.yml`
+  and PR title validation. Note: MegaLinter runs in CI only;
+  there is no local equivalent. Use `mega-linter-runner` if
+  local linting is needed (requires Docker).
 - **Scanner Environment Verification**: Before treating a
   local `govulncheck` result as a repository regression,
   compare `go version` with the version declared in
@@ -603,6 +612,7 @@ originally by [Joel Hooks](https://github.com/joelhooks).
 - Go 1.26.9+ + cobra (CLI), modernc.org/sqlite (pure Go SQLite), embed (stdlib) (003-rename-terminology)
 
 ## Recent Changes
+- ci-skip-build-for-learnings: Learnings-only PRs skip the build and test job via a `changes` detection job in `ci.yml`; secret scanning and PR title validation (`Standardized CI / Run linters`) still run on every PR; the required `Build and Test` check moved to the aggregate `CI OK`
 - 101-adopt-org-infra-ci: Added MegaLinter CI workflow via `complytime/org-infra` reusable workflow, added `.mega-linter.yml` config, added `Standardized CI / Run linters` to branch protection and release preflight gating
 - 428-adopt-org-infra-release-workflows: Adopted org-infra reusable workflows for release pipeline, added govulncheck to CI, added per-package coverage ratchets, added CI convention pack, added SECURITY.md and CODEOWNERS, migrated commands to `uf.*` namespace
 - 001-go-rewrite-phases: Added Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations)
