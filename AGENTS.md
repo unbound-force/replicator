@@ -106,15 +106,24 @@ non-negotiable.
 - **CI Parity Gate**: Before marking any task complete, run
   the CI-equivalent checks locally. Read
   `.github/workflows/` for the exact commands -- do not
-  rely on memory. Any failure blocks the task. The CI
-  `Build and Test` check includes `govulncheck` for
-  vulnerability scanning of Go dependencies. The
-  `Standardized CI / Run linters` check runs MegaLinter
-  (via `complytime/org-infra` reusable workflow) with
-  linters configured in `.mega-linter.yml` and PR title
-  validation. Note: MegaLinter runs in CI only; there is
-  no local equivalent. Use `mega-linter-runner` if local
-  linting is needed (requires Docker).
+  rely on memory. Any failure blocks the task. Branch
+  protection requires `CI OK` (an aggregate in `ci.yml`
+  that fails when any needed job failed or was cancelled)
+  and `Standardized CI / Run linters`. Pull requests
+  changing only `.md` files under `.uf/dewey/learnings/` skip
+  the `Build and Test` job (a `changes` job in `ci.yml`
+  detects this, counts symlinks, submodules and empty
+  diffs as code, and fails closed on diff errors); the
+  Standardized CI check is never skipped, so secret
+  scanning and PR title validation run on every PR; pushes
+  to `main` always run everything. The `Build and Test` job includes
+  `govulncheck` for vulnerability scanning of Go
+  dependencies. The `Standardized CI / Run linters` check
+  runs MegaLinter (via `complytime/org-infra` reusable
+  workflow) with linters configured in `.mega-linter.yml`
+  and PR title validation. Note: MegaLinter runs in CI only;
+  there is no local equivalent. Use `mega-linter-runner` if
+  local linting is needed (requires Docker).
 - **Scanner Environment Verification**: Before treating a
   local `govulncheck` result as a repository regression,
   compare `go version` with the version declared in
@@ -407,6 +416,44 @@ implementation begins.
 - **Code review**: Required before merge.
 - **Semantic versioning**: For releases.
 
+## Release Pipeline
+
+Releases run through the shared reusable workflow in
+[`jflowers/ship`](https://github.com/jflowers/ship)
+(`.github/workflows/go-release.yml`), the same one dewey,
+gaze and the other Go tools use. `.github/workflows/release.yml`
+only calls it (`workflow_dispatch` with a `tag` input, e.g.
+`gh workflow run release.yml -f tag=v1.2.3`). Ship runs:
+
+1. `settings`: signing needs all six `MACOS_*` secrets or
+   none; a partial set fails before anything is tagged.
+2. `preflight` (`complytime/org-infra`): semver (pre-release
+   suffixes allowed), tag uniqueness, CI on HEAD
+   (`Build and Test`, `Standardized CI / Run linters`),
+   unreleased commits, then the annotated tag.
+3. `release` (`complytime/org-infra` GoReleaser): binaries,
+   GitHub Release, cosign signatures, SBOMs.
+4. `sign-macos`: Developer ID signing and notarization of the
+   darwin archives, re-uploaded with `checksums.txt` rewritten.
+5. The cask job: every sha256 from the final `checksums.txt`,
+   `brew audit`, then a push to `unbound-force/homebrew-tap`.
+
+Rules for agents and reviewers:
+
+- **Keep the delegation.** Using `jflowers/ship`, a personal
+  account, is a deliberate maintainer decision (#181). Don't
+  move the pipeline back in-repo or flag the delegation as a
+  finding; a change to this decision needs a new issue from a
+  maintainer.
+- **Pin by SHA.** Pin ship by full commit SHA with its
+  version comment. When bumping, confirm the tag resolves
+  (annotated tags dereferenced) to that commit.
+- **Map secrets by name.** `secrets: inherit` doesn't reach
+  a workflow in another owner's repo, so map every secret by
+  name.
+- **Fix the pipeline in ship.** Fix release-pipeline bugs in
+  ship, not here, then bump the pin.
+
 ## Commands
 
 ```bash
@@ -565,6 +612,7 @@ originally by [Joel Hooks](https://github.com/joelhooks).
 - Go 1.26.9+ + cobra (CLI), modernc.org/sqlite (pure Go SQLite), embed (stdlib) (003-rename-terminology)
 
 ## Recent Changes
+- ci-skip-build-for-learnings: Learnings-only PRs skip the build and test job via a `changes` detection job in `ci.yml`; secret scanning and PR title validation (`Standardized CI / Run linters`) still run on every PR; the required `Build and Test` check moved to the aggregate `CI OK`
 - 101-adopt-org-infra-ci: Added MegaLinter CI workflow via `complytime/org-infra` reusable workflow, added `.mega-linter.yml` config, added `Standardized CI / Run linters` to branch protection and release preflight gating
 - 428-adopt-org-infra-release-workflows: Adopted org-infra reusable workflows for release pipeline, added govulncheck to CI, added per-package coverage ratchets, added CI convention pack, added SECURITY.md and CODEOWNERS, migrated commands to `uf.*` namespace
 - 001-go-rewrite-phases: Added Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations)
