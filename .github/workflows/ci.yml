@@ -1,9 +1,13 @@
 # CI
 # --
 # Continuous integration pipeline. Runs on push to main and
-# pull requests. Validates code quality (vet, govulncheck),
-# runs tests with race detection, enforces per-package
-# coverage ratchets, and verifies the binary builds.
+# pull requests. A changes job detects whether a pull request
+# touches files outside .uf/dewey/learnings/ and gates the
+# expensive jobs; pushes to main always run everything. The
+# CI OK aggregate fails when any needed job fails or is
+# cancelled. Validates code quality (vet, govulncheck), runs
+# tests with race detection, enforces per-package coverage
+# ratchets, and verifies the binary builds.
 
 name: CI
 
@@ -21,15 +25,116 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect code changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.detect.outputs.code }}
+    steps:
+      # Pushes never diff (see the push short-circuit below), so they
+      # skip the checkout.
+      - if: github.event_name == 'pull_request'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          # On pull_request the checkout is refs/pull/N/merge; depth 2
+          # fetches the merge commit and both of its parents.
+          fetch-depth: 2
+
+      - name: Detect code changes
+        id: detect
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # Pushes to main always run full CI (CLS-FR-001).
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            echo "Push event — setting code=true unconditionally."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # HEAD is GitHub's merge of the PR head (HEAD^2) into the current
+          # main (HEAD^1), so HEAD^1..HEAD is exactly what merging the PR
+          # would change on main today. Unlike a diff against the event's
+          # base SHA, it does not count main's own changes when
+          # base.sha is older than the main merged into the branch.
+          # Fail closed: anything unexpected fails the job rather than guessing.
+          if ! PR_PARENT="$(git rev-parse --verify --quiet 'HEAD^2^{commit}')"; then
+            echo "::error::HEAD is not the pull request merge commit — failing closed (CLS-FR-001)"
+            exit 1
+          fi
+          if [ "$PR_PARENT" != "$HEAD_SHA" ]; then
+            echo "::error::merge commit's second parent $PR_PARENT is not the PR head $HEAD_SHA — failing closed (CLS-FR-001)"
+            exit 1
+          fi
+          if ! CHANGED_FILES="$(git diff --raw --no-renames 'HEAD^1' HEAD)"; then
+            echo "::error::git diff of the pull request merge commit failed — failing closed (CLS-FR-001)"
+            exit 1
+          fi
+
+          # Learnings-only means every change is a regular .md file under
+          # .uf/dewey/learnings/ (added, edited or deleted), the same rule
+          # as the sibling repos. --no-renames lists both sides of a
+          # rename, so a file moved into learnings still counts its source
+          # path. --raw adds file modes: symlinks (120000) and submodules
+          # (160000) can point anywhere, so they count as code. An empty
+          # diff, a path git had to quote, or a line that does not parse
+          # also counts as code.
+          code="false"
+          reason=""
+          if [ -z "$CHANGED_FILES" ]; then
+            code="true"
+            reason="no changed files"
+          fi
+          while IFS= read -r line; do
+            [ "$code" = "true" ] && break
+            [ -z "$line" ] && continue
+            # ":<old mode> <new mode> <old sha> <new sha> <status><TAB><path>"
+            meta="${line%%$'\t'*}"
+            file="${line#*$'\t'}"
+            if [ "$meta" = "$line" ] || [ "${meta#:}" = "$meta" ]; then
+              code="true"
+              reason="unparsable diff line: $line"
+              break
+            fi
+            read -r old_mode new_mode _ <<< "${meta#:}"
+            for mode in "$old_mode" "$new_mode"; do
+              case "$mode" in
+                000000|100644|100755) ;;
+                *)
+                  code="true"
+                  reason="mode $mode (symlink or submodule): $file"
+                  ;;
+              esac
+            done
+            [ "$code" = "true" ] && break
+            case "$file" in
+              .uf/dewey/learnings/?*.md) ;;
+              *)
+                code="true"
+                reason="not a .md file under .uf/dewey/learnings/: $file"
+                ;;
+            esac
+          done <<< "$CHANGED_FILES"
+
+          if [ "$code" = "true" ]; then
+            echo "Full CI required — $reason"
+          else
+            echo "All changed files are learnings under .uf/dewey/learnings/ — expensive jobs may skip."
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
   build-and-test:
     name: Build and Test
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5  # v7.1.0
         with:
           go-version-file: go.mod
           cache: false
@@ -118,3 +223,39 @@ jobs:
 
       - name: Build
         run: go build -o bin/replicator ./cmd/replicator
+
+  ci-ok:
+    name: CI OK
+    needs: [changes, build-and-test]
+    # Always run, so a failed or cancelled job fails the check -- except
+    # for a push run that was itself cancelled (superseded by a newer
+    # push to main). That run is not a verdict, so the check is skipped
+    # instead of leaving a red CI OK on main's history. Pull request runs
+    # never skip it: a skipped job satisfies a required check, so a
+    # cancelled PR run must fail.
+    if: always() && !(github.event_name == 'push' && cancelled())
+    runs-on: ubuntu-latest
+    steps:
+      # The verdict is plain shell over the needed jobs' results, so
+      # ci_gating_test.go can run it against every combination. Anything
+      # but success or skipped -- failure, cancelled, or a result GitHub
+      # adds later -- fails, and so does an empty result list.
+      - name: Check needed job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Needed job results: ${RESULTS:-<none>}"
+          if [ -z "$RESULTS" ]; then
+            echo "::error::No needed job results — CI did not pass."
+            exit 1
+          fi
+          for result in $RESULTS; do
+            case "$result" in
+              success|skipped) ;;
+              *)
+                echo "::error::A needed job ended '$result' — CI did not pass."
+                exit 1
+                ;;
+            esac
+          done
+          echo "All needed jobs succeeded or were skipped."
