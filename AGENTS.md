@@ -106,15 +106,24 @@ non-negotiable.
 - **CI Parity Gate**: Before marking any task complete, run
   the CI-equivalent checks locally. Read
   `.github/workflows/` for the exact commands -- do not
-  rely on memory. Any failure blocks the task. The CI
-  `Build and Test` check includes `govulncheck` for
-  vulnerability scanning of Go dependencies. The
-  `Standardized CI / Run linters` check runs MegaLinter
-  (via `complytime/org-infra` reusable workflow) with
-  linters configured in `.mega-linter.yml` and PR title
-  validation. Note: MegaLinter runs in CI only; there is
-  no local equivalent. Use `mega-linter-runner` if local
-  linting is needed (requires Docker).
+  rely on memory. Any failure blocks the task. Branch
+  protection requires `CI OK` (an aggregate in `ci.yml`
+  that fails when any needed job failed or was cancelled)
+  and `Standardized CI / Run linters`. Pull requests
+  changing only `.md` files under `.uf/dewey/learnings/` skip
+  the `Build and Test` job (a `changes` job in `ci.yml`
+  detects this, counts symlinks, submodules and empty
+  diffs as code, and fails closed on diff errors); the
+  Standardized CI check is never skipped, so secret
+  scanning and PR title validation run on every PR; pushes
+  to `main` always run everything. The `Build and Test` job includes
+  `govulncheck` for vulnerability scanning of Go
+  dependencies. The `Standardized CI / Run linters` check
+  runs MegaLinter (via `complytime/org-infra` reusable
+  workflow) with linters configured in `.mega-linter.yml`
+  and PR title validation. Note: MegaLinter runs in CI only;
+  there is no local equivalent. Use `mega-linter-runner` if
+  local linting is needed (requires Docker).
 - **Scanner Environment Verification**: Before treating a
   local `govulncheck` result as a repository regression,
   compare `go version` with the version declared in
@@ -283,50 +292,54 @@ and `dewey_traverse` for keyword and structural queries.
 Grep tool, convention packs at
 `.opencode/unbound/packs/`.
 
-## Spec-First Development
+## Workflow Tiers
 
-All changes that modify production code, test code, agent
-prompts, embedded assets, or CI configuration **must** be
-preceded by a spec workflow. The constitution
-(`.specify/memory/constitution.md`) is the highest-
-authority document in this project -- all work must align
-with it.
+Every change follows a workflow, but **which** workflow
+is decided per change -- no single tier is mandatory.
+Pick the tier that fits the change's scope and risk.
+`/uf.unleash` does this automatically through the
+`tier-routing` skill when no spec exists yet; agents
+working by hand apply the same rubric. The constitution
+(`.specify/memory/constitution.md`) remains the highest-
+authority document in this project -- all work must
+align with it, whatever the tier.
 
-**What requires a spec** (no exceptions without explicit
-user override):
+| Tier | Choose when | Artifacts | Branch |
+|------|-------------|-----------|--------|
+| **Speckit** (strategic) | New capability or cross-cutting change: 3+ stories, multiple subsystems, cross-repo | `specs/NNN-name/` | `NNN-<name>` |
+| **OpenSpec** (tactical) | Focused feature or non-trivial fix: 1-2 stories, bounded blast radius | `openspec/changes/name/` | `opsx/<name>` |
+| **Quick** | Trivial fix, chore, dependency bump, or docs change where ceremony exceeds value | None -- CI green plus code review | `quick/<name>` |
 
-- New features or capabilities
-- Refactoring that changes function signatures, extracts
-  helpers, or moves code between packages
-- Test additions or assertion strengthening across
-  multiple functions
-- Agent prompt changes
-- CI workflow modifications
-- Data model changes (new struct fields, schema updates)
+**Scope signals**: wording ("add a capability", "new
+subsystem", "migrate" point heavier; "fix typo", "bump
+version", "update docs" point to Quick), how many files
+and subsystems the change reaches, and how many user
+stories it implies. When signals conflict between two
+adjacent tiers, choose the heavier one.
 
-**What is exempt** (may be done directly):
+**Risk floors** (escalate only): a change that touches
+security-sensitive code (secrets, tokens, crypto,
+permissions), authentication or authorization flows,
+data-loss paths (migrations, deletions, destructive
+operations), or breaks a public API contract **must**
+use OpenSpec at minimum -- never Quick.
 
-- Constitution amendments (governed by the constitution's
-  own Governance section)
-- Typo corrections, comment-only changes, single-line
-  formatting fixes
-- Emergency hotfixes for critical production bugs (must
-  be retroactively documented)
-
-When an agent is unsure whether a change is trivial, it
-**must** ask the user rather than proceeding without a
-spec. The cost of an unnecessary spec is minutes; the
-cost of an unplanned change is rework, drift, and broken
-CI.
+**Quality gates apply to every tier.** Quick skips spec
+artifacts, not review: CI must pass and the change still
+goes through code review (`/uf.review-council`) before
+merge. Constitution amendments follow the constitution's
+own Governance section.
 
 ## Specification Framework
 
-This project uses a two-tier specification framework:
+This project uses a three-tier workflow framework (see
+Workflow Tiers above for how a tier is chosen):
 
-| Tier      | Tool     | When to Use              | Location              |
-| --------- | -------- | ------------------------ | --------------------- |
-| Strategic | Speckit  | 3+ stories, architecture | `specs/NNN-*/`        |
-| Tactical  | OpenSpec | <3 stories, bug fix      | `openspec/changes/`   |
+| Tier      | Tool                  | When to Use                 | Location              |
+| --------- | --------------------- | --------------------------- | --------------------- |
+| Strategic | Speckit               | 3+ stories, architecture    | `specs/NNN-*/`        |
+| Tactical  | OpenSpec              | <3 stories, bug fix         | `openspec/changes/`   |
+| Quick     | `/uf.unleash` routing | trivial fixes, chores, docs | `quick/<name>` branch |
 
 ### Speckit Pipeline
 
@@ -404,6 +417,7 @@ implementation begins.
   `type: description` (feat, fix, docs, chore, refactor).
 - **Branching**: Feature branches required. Speckit:
   `NNN-<name>`. OpenSpec: `opsx/<name>`.
+  Quick: `quick/<name>`.
 - **Code review**: Required before merge.
 - **Semantic versioning**: For releases.
 
@@ -603,6 +617,7 @@ originally by [Joel Hooks](https://github.com/joelhooks).
 - Go 1.26.9+ + cobra (CLI), modernc.org/sqlite (pure Go SQLite), embed (stdlib) (003-rename-terminology)
 
 ## Recent Changes
+- ci-skip-build-for-learnings: Learnings-only PRs skip the build and test job via a `changes` detection job in `ci.yml`; secret scanning and PR title validation (`Standardized CI / Run linters`) still run on every PR; the required `Build and Test` check moved to the aggregate `CI OK`
 - 101-adopt-org-infra-ci: Added MegaLinter CI workflow via `complytime/org-infra` reusable workflow, added `.mega-linter.yml` config, added `Standardized CI / Run linters` to branch protection and release preflight gating
 - 428-adopt-org-infra-release-workflows: Adopted org-infra reusable workflows for release pipeline, added govulncheck to CI, added per-package coverage ratchets, added CI convention pack, added SECURITY.md and CODEOWNERS, migrated commands to `uf.*` namespace
 - 001-go-rewrite-phases: Added Go 1.25+ + `cobra` (CLI), `modernc.org/sqlite` (pure Go SQLite), stdlib `encoding/json` (MCP JSON-RPC), stdlib `os/exec` (git operations)
